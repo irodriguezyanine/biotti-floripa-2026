@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Music } from "lucide-react";
 
-const SPOTIFY_TRACK_URL = "https://open.spotify.com/track/0QAUgW2vTmlUWhbiNeSkWm";
+const SPOTIFY_TRACK_URL = "https://open.spotify.com/track/6U7GUjtamt2P0LcFod1dBT";
 
 export default function Footer() {
   return (

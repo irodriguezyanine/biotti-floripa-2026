@@ -1,13 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Music2, Minimize2 } from "lucide-react";
+import { hasUserEntered } from "./WelcomeModal";
 
-const SPOTIFY_TRACK_ID = "0QAUgW2vTmlUWhbiNeSkWm";
-const EMBED_URL = `https://open.spotify.com/embed/track/${SPOTIFY_TRACK_ID}?utm_source=generator&autoplay=1`;
+const SPOTIFY_TRACK_ID = "6U7GUjtamt2P0LcFod1dBT";
+const getEmbedUrl = () =>
+  `https://open.spotify.com/embed/track/${SPOTIFY_TRACK_ID}?utm_source=generator&autoplay=1`;
 
 export default function SpotifyPlayer() {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [shouldLoad, setShouldLoad] = useState(false);
+
+  useEffect(() => {
+    if (hasUserEntered()) {
+      setShouldLoad(true);
+      return;
+    }
+    const onEnter = () => setShouldLoad(true);
+    window.addEventListener("welcomeEnter", onEnter);
+    return () => window.removeEventListener("welcomeEnter", onEnter);
+  }, []);
 
   return (
     <div
@@ -32,9 +45,10 @@ export default function SpotifyPlayer() {
           isExpanded ? "opacity-100 h-[152px]" : "opacity-0 h-0 pointer-events-none overflow-hidden"
         }`}
       >
-        <iframe
-          style={{ borderRadius: "12px" }}
-          src={EMBED_URL}
+        {shouldLoad && (
+          <iframe
+            style={{ borderRadius: "12px" }}
+            src={getEmbedUrl()}
           width="100%"
           height="152"
           frameBorder="0"
@@ -42,7 +56,8 @@ export default function SpotifyPlayer() {
           allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
           loading="eager"
           title="Spotify - Canción de la despedida"
-        />
+          />
+        )}
       </div>
 
       {!isExpanded && (
