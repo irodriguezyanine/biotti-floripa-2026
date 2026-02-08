@@ -36,3 +36,17 @@ Abre [http://localhost:3000](http://localhost:3000).
 npm run build
 npm start
 ```
+
+## Subir a GitHub
+
+1. Crea un repositorio nuevo en [github.com/new](https://github.com/new) (por ejemplo `biotti-floripa-2026`). No marques "Add a README" si ya tienes uno local.
+2. En la carpeta del proyecto, enlaza el remoto y sube:
+
+```bash
+cd biotti-floripa-2026
+git remote add origin https://github.com/TU_USUARIO/biotti-floripa-2026.git
+git branch -M main
+git push -u origin main
+```
+
+Sustituye `TU_USUARIO` por tu usuario de GitHub. Si usas SSH: `git@github.com:TU_USUARIO/biotti-floripa-2026.git`.
