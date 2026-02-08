@@ -8,13 +8,21 @@ const PLAYLIST_URL =
 
 export default function Footer() {
   return (
-    <footer className="relative py-20 px-4 border-t border-white/10">
+    <footer className="relative py-20 px-4 border-t border-white/10 overflow-hidden">
+      {/* Fondo playa atardecer Brasil */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15"
+        style={{
+          backgroundImage: `url(https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80)`,
+        }}
+      />
+      <div className="absolute inset-0 bg-sky-950/95" />
       <div className="max-w-4xl mx-auto text-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="glass-card rounded-2xl p-8 mb-12 inline-block"
+          className="relative z-10 glass-card rounded-2xl p-8 mb-12 inline-block"
         >
           <div className="flex items-center justify-center gap-3 mb-4">
             <Music className="w-8 h-8 text-neon-pink" />
@@ -40,12 +48,12 @@ export default function Footer() {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="font-mono text-sm text-white/50"
+          className="relative z-10 font-mono text-sm text-white/50"
         >
           Lo que pasa en Floripa, se queda en la Blockchain.
         </motion.p>
-        <p className="mt-2 text-white/30 text-xs font-body">
-          BIOTTI LA ÚLTIMA VUELTA · Floripa 2026
+        <p className="relative z-10 mt-2 text-white/30 text-xs font-body">
+          DESPEDIDA DE SOLTEROS DE BIOTTI · LA ÚLTIMA VUELTA · Floripa 2026
         </p>
       </div>
     </footer>

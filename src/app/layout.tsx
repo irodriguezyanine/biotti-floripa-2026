@@ -22,8 +22,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BIOTTI LA ÚLTIMA VUELTA | Floripa 2026",
-  description: "Despedida de soltero de Sebastián Biotti. Florianópolis, Brasil. 21-24 Mayo 2026.",
+  title: "DESPEDIDA DE SOLTEROS DE BIOTTI | LA ÚLTIMA VUELTA | Floripa 2026",
+  description: "Despedida de solteros de Biotti — La Última Vuelta. Florianópolis, Brasil. Playas, fiesta, cócteles. 21-24 Mayo 2026.",
 };
 
 export default function RootLayout({

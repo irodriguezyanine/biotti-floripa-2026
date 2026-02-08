@@ -8,15 +8,16 @@ import { Plane } from "lucide-react";
 export default function Hero() {
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center px-4 py-20 overflow-hidden">
-      {/* Background: gradient + optional image/video placeholder */}
+      {/* Background: Brasil playas, fiesta, tropical */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(10,6,18,0.85) 50%, rgba(10,6,18,1) 100%),
-            url(https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=1920&q=80)`,
+          backgroundImage: `linear-gradient(to bottom, rgba(0,20,40,0.4) 0%, rgba(8,45,65,0.75) 40%, rgba(5,30,50,0.95) 100%),
+            url(https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1920&q=85)`,
         }}
       />
-      <div className="absolute inset-0 bg-black/40" />
+      {/* Overlay adicional para mantener legibilidad */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-sky-900/20 to-sky-950/90" />
 
       <div className="relative z-10 max-w-4xl mx-auto text-center">
         <motion.p
@@ -36,10 +37,10 @@ export default function Hero() {
           transition={{ delay: 0.5, duration: 0.7 }}
           className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl mt-10 sm:mt-14 text-white leading-tight"
         >
-          BIOTTI SE CASA.
+          DESPEDIDA DE SOLTEROS DE BIOTTI
           <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-sunset-orange via-neon-pink to-miami-blue">
-            FLORIPA NOS ESPERA.
+            LA ÚLTIMA VUELTA
           </span>
         </motion.h1>
 
