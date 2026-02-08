@@ -36,14 +36,14 @@ const item = {
 export default function Squad() {
   return (
     <section id="crew" className="relative py-24 px-4 overflow-hidden">
-      {/* Fondo Brasil / playa tropical */}
+      {/* Fondo fiesta Brasil */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-25"
         style={{
-          backgroundImage: `url(https://images.unsplash.com/photo-1519046904884-53103b34b206?w=1920&q=80)`,
+          backgroundImage: `url(/party-brasil.png)`,
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-sky-950/95 via-sky-900/90 to-sky-950/95" />
+      <div className="absolute inset-0 bg-gradient-to-b from-sky-950/90 via-violet-950/90 to-sky-950/95" />
       <div className="relative z-10 max-w-6xl mx-auto">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}

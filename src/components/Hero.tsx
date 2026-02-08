@@ -8,16 +8,16 @@ import { Plane } from "lucide-react";
 export default function Hero() {
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center px-4 py-20 overflow-hidden">
-      {/* Background: Brasil playas, fiesta, tropical */}
+      {/* Fondo fiesta Brasil: terraza Río, atardecer, cócteles, mujeres */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: `linear-gradient(to bottom, rgba(0,20,40,0.4) 0%, rgba(8,45,65,0.75) 40%, rgba(5,30,50,0.95) 100%),
-            url(https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1920&q=85)`,
+          backgroundImage: `linear-gradient(to bottom, rgba(120,40,80,0.25) 0%, rgba(60,20,50,0.5) 40%, rgba(30,10,35,0.9) 100%),
+            url(/party-brasil.png)`,
         }}
       />
-      {/* Overlay adicional para mantener legibilidad */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-sky-900/20 to-sky-950/90" />
+      {/* Overlay atardecer cálido - tonos naranja/rosa/púrpura */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-fuchsia-900/15 to-violet-950/85" />
 
       <div className="relative z-10 max-w-4xl mx-auto text-center">
         <motion.p
