@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Music2, Minimize2 } from "lucide-react";
 import { hasUserEntered } from "./WelcomeModal";
 
-const SPOTIFY_TRACK_ID = "6U7GUjtamt2P0LcFod1dBT";
+const SPOTIFY_TRACK_ID = "36SJ7ZFx8J1f1RsewmUwMX";
 const START_AT_SECONDS = 10; // Iniciar en 0:10
 const getEmbedUrl = () =>
   `https://open.spotify.com/embed/track/${SPOTIFY_TRACK_ID}?utm_source=generator&autoplay=1&start=${START_AT_SECONDS}`;
