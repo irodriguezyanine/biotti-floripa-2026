@@ -37,9 +37,13 @@ Abre [http://localhost:3000](http://localhost:3000).
 ## Configurar Cloudinary
 
 1. Copia `.env.example` a `.env.local`.
-2. Completa estas variables:
+2. Configura Cloudinary de una de estas 2 formas:
 
 ```bash
+# Recomendado (copiar "API environment variable" desde Cloudinary):
+# CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>
+
+# Alternativa manual:
 CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...

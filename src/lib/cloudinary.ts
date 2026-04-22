@@ -11,19 +11,29 @@ let configured = false;
 function ensureCloudinaryConfig() {
   if (configured) return;
 
-  const missing = requiredEnvs.filter((envName) => !process.env[envName]);
-  if (missing.length > 0) {
-    throw new Error(
-      `Faltan variables de entorno de Cloudinary: ${missing.join(", ")}`
-    );
-  }
+  const cloudinaryUrl = process.env.CLOUDINARY_URL?.trim();
+  if (cloudinaryUrl) {
+    cloudinary.config({
+      cloudinary_url: cloudinaryUrl,
+      secure: true,
+    });
+  } else {
+    const missing = requiredEnvs.filter((envName) => !process.env[envName]);
+    if (missing.length > 0) {
+      throw new Error(
+        `Faltan variables de entorno de Cloudinary: ${missing.join(
+          ", "
+        )}. O define CLOUDINARY_URL completo.`
+      );
+    }
 
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true,
-  });
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+      secure: true,
+    });
+  }
 
   configured = true;
 }
