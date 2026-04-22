@@ -28,7 +28,29 @@ Abre [http://localhost:3000](http://localhost:3000).
 - `src/components/Hero.tsx` — Hero con countdown y CTA
 - `src/components/Squad.tsx` — THE CREW / Wanted List (glass cards)
 - `src/components/FlightDashboard.tsx` — Deployment Strategy (vuelos ida/vuelta)
+- `src/components/Itinerary.tsx` — Itinerario base 21-24 mayo
+- `src/components/GallerySection.tsx` — Galería colaborativa (subida + listado)
 - `src/components/Footer.tsx` — Music & Vibe + frase blockchain
+- `src/app/api/gallery/upload/route.ts` — Endpoint para subir imágenes a Cloudinary
+- `src/app/api/gallery/route.ts` — Endpoint para listar imágenes de la galería
+
+## Configurar Cloudinary
+
+1. Copia `.env.example` a `.env.local`.
+2. Completa estas variables:
+
+```bash
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+```
+
+3. Reinicia `npm run dev`.
+
+La galería muestra cada foto con:
+- Nombre del usuario que la subió (obligatorio)
+- Mensaje (opcional)
+- Fecha/hora de subida
 
 ## Build para producción
 

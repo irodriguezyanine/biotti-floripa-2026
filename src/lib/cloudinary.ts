@@ -1,0 +1,46 @@
+import { v2 as cloudinary } from "cloudinary";
+
+const requiredEnvs = [
+  "CLOUDINARY_CLOUD_NAME",
+  "CLOUDINARY_API_KEY",
+  "CLOUDINARY_API_SECRET",
+] as const;
+
+let configured = false;
+
+function ensureCloudinaryConfig() {
+  if (configured) return;
+
+  const missing = requiredEnvs.filter((envName) => !process.env[envName]);
+  if (missing.length > 0) {
+    throw new Error(
+      `Faltan variables de entorno de Cloudinary: ${missing.join(", ")}`
+    );
+  }
+
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
+
+  configured = true;
+}
+
+export function getCloudinary() {
+  ensureCloudinaryConfig();
+  return cloudinary;
+}
+
+export function getGalleryFolder() {
+  return process.env.CLOUDINARY_UPLOAD_FOLDER || "biotti-floripa-2026/gallery";
+}
+
+export function normalizeCloudinaryText(value: string) {
+  return value
+    .replace(/[=|]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
+}
