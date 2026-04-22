@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import {
   Calendar,
   Clock,
+  ExternalLink,
+  MapPin,
   Plane,
   UtensilsCrossed,
   X,
@@ -17,6 +19,13 @@ type ItineraryItem = {
   description: string;
   isFlight?: boolean;
   isMeal?: boolean;
+  suggestion?: {
+    name: string;
+    summary: string;
+    address: string;
+    distanceFromHouse: string;
+    routeUrl: string;
+  };
 };
 
 type ItineraryDay = {
@@ -53,15 +62,35 @@ const ITINERARY_DAYS: ItineraryDay[] = [
       },
       {
         time: "16:30 - 17:30",
-        activity: "Actividad todo el día · Praia de Canasvieiras",
+        activity: "Playa",
         description:
           "Inicio del recorrido en playa base del sector norte, ideal para aterrizar el día sin traslados largos.",
+        suggestion: {
+          name: "Praia de Canasvieiras",
+          summary:
+            "Playa amplia, mar tranquilo y excelente opción para arrancar el viaje con poca logística.",
+          address: "Canasvieiras, Florianópolis - SC, Brasil",
+          distanceFromHouse:
+            "Aprox. 3 km desde la casa · 8 a 10 min en auto · 35 a 40 min caminando",
+          routeUrl:
+            "https://www.google.com/maps/search/?api=1&query=Praia+de+Canasvieiras,+Florianopolis,+SC,+Brasil",
+        },
       },
       {
         time: "17:30 - 18:30",
-        activity: "Actividad todo el día · Praia de Canasvieiras",
+        activity: "Playa",
         description:
           "Segundo bloque continuo en la misma playa para cumplir jornada de 2 horas completas.",
+        suggestion: {
+          name: "Praia de Canasvieiras",
+          summary:
+            "Ideal para seguir el primer día con servicios cerca, ambiente relajado y acceso simple.",
+          address: "Canasvieiras, Florianópolis - SC, Brasil",
+          distanceFromHouse:
+            "Aprox. 3 km desde la casa · 8 a 10 min en auto · 35 a 40 min caminando",
+          routeUrl:
+            "https://www.google.com/maps/search/?api=1&query=Praia+de+Canasvieiras,+Florianopolis,+SC,+Brasil",
+        },
       },
       {
         time: "18:30 - 20:30",
@@ -104,15 +133,35 @@ const ITINERARY_DAYS: ItineraryDay[] = [
       },
       {
         time: "12:00 - 13:00",
-        activity: "Actividad todo el día · Praia da Lagoinha",
+        activity: "Playa",
         description:
           "Primera playa del viernes, bahía calma para comenzar el bloque largo de recorrido.",
+        suggestion: {
+          name: "Praia da Lagoinha",
+          summary:
+            "Bahía tranquila y protegida, perfecta para un bloque largo con el grupo y sin tanto oleaje.",
+          address: "Praia da Lagoinha, Florianópolis - SC, Brasil",
+          distanceFromHouse:
+            "Aprox. 10 km desde la casa · 20 a 25 min en auto · no recomendable caminando",
+          routeUrl:
+            "https://www.google.com/maps/search/?api=1&query=Praia+da+Lagoinha,+Florianopolis,+SC,+Brasil",
+        },
       },
       {
         time: "13:00 - 14:00",
-        activity: "Actividad todo el día · Praia da Lagoinha",
+        activity: "Playa",
         description:
           "Segundo bloque seguido en Lagoinha para completar mínimo 2 horas por playa.",
+        suggestion: {
+          name: "Praia da Lagoinha",
+          summary:
+            "Muy buena para descansar, moverse cómodo y mantener la ruta sin alejarse demasiado del norte.",
+          address: "Praia da Lagoinha, Florianópolis - SC, Brasil",
+          distanceFromHouse:
+            "Aprox. 10 km desde la casa · 20 a 25 min en auto · no recomendable caminando",
+          routeUrl:
+            "https://www.google.com/maps/search/?api=1&query=Praia+da+Lagoinha,+Florianopolis,+SC,+Brasil",
+        },
       },
       {
         time: "13:00 - 15:00",
@@ -185,15 +234,35 @@ const ITINERARY_DAYS: ItineraryDay[] = [
       },
       {
         time: "12:00 - 13:00",
-        activity: "Actividad todo el día · Jurerê Tradicional",
+        activity: "Playa",
         description:
           "Primera playa del sábado, inicio del bloque de dos horas continuas.",
+        suggestion: {
+          name: "Jurerê Tradicional",
+          summary:
+            "Alternativa clásica y muy cercana, ideal para playa relajada, arena cómoda y fácil logística.",
+          address: "Praia de Jurerê, Florianópolis - SC, Brasil",
+          distanceFromHouse:
+            "Aprox. 1 km desde la casa · 3 a 5 min en auto · 12 a 15 min caminando",
+          routeUrl:
+            "https://www.google.com/maps/search/?api=1&query=Praia+de+Jurere,+Florianopolis,+SC,+Brasil",
+        },
       },
       {
         time: "13:00 - 14:00",
-        activity: "Actividad todo el día · Jurerê Tradicional",
+        activity: "Playa",
         description:
           "Segundo bloque en Jurerê Tradicional para cumplir jornada completa por playa.",
+        suggestion: {
+          name: "Jurerê Tradicional",
+          summary:
+            "Muy práctica para moverse en grupo grande y volver rápido a la casa si hace falta.",
+          address: "Praia de Jurerê, Florianópolis - SC, Brasil",
+          distanceFromHouse:
+            "Aprox. 1 km desde la casa · 3 a 5 min en auto · 12 a 15 min caminando",
+          routeUrl:
+            "https://www.google.com/maps/search/?api=1&query=Praia+de+Jurere,+Florianopolis,+SC,+Brasil",
+        },
       },
       {
         time: "14:00 - 16:00",
@@ -204,15 +273,35 @@ const ITINERARY_DAYS: ItineraryDay[] = [
       },
       {
         time: "16:00 - 17:00",
-        activity: "Actividad todo el día · Jurerê Internacional",
+        activity: "Playa",
         description:
           "Paso por Jurerê Internacional para ambiente premium y recorrido de tarde.",
+        suggestion: {
+          name: "Jurerê Internacional",
+          summary:
+            "Playa con mejor infraestructura, buen ambiente y excelente opción para una tarde más premium.",
+          address: "Jurerê Internacional, Florianópolis - SC, Brasil",
+          distanceFromHouse:
+            "Aprox. 1.5 km desde la casa · 5 min en auto · 18 a 22 min caminando",
+          routeUrl:
+            "https://www.google.com/maps/search/?api=1&query=Jurere+Internacional,+Florianopolis,+SC,+Brasil",
+        },
       },
       {
         time: "18:00 - 19:00",
-        activity: "Actividad todo el día · Jurerê Internacional",
+        activity: "Playa",
         description:
           "Segundo bloque seguido en Jurerê Internacional para completar 2 horas.",
+        suggestion: {
+          name: "Jurerê Internacional",
+          summary:
+            "Buen cierre de tarde para combinar playa, sunset y entorno con más servicios cercanos.",
+          address: "Jurerê Internacional, Florianópolis - SC, Brasil",
+          distanceFromHouse:
+            "Aprox. 1.5 km desde la casa · 5 min en auto · 18 a 22 min caminando",
+          routeUrl:
+            "https://www.google.com/maps/search/?api=1&query=Jurere+Internacional,+Florianopolis,+SC,+Brasil",
+        },
       },
       {
         time: "20:00 - 21:00",
@@ -433,6 +522,33 @@ export default function Itinerary() {
               <p className="mt-4 text-white/85 font-body leading-relaxed">
                 {selectedItem.item.description}
               </p>
+
+              {selectedItem.item.suggestion && (
+                <div className="mt-5 rounded-xl border border-white/15 bg-white/5 p-4 space-y-3">
+                  <p className="text-neon-pink font-body font-semibold">
+                    Sugerencia: {selectedItem.item.suggestion.name}
+                  </p>
+                  <p className="text-white/80 text-sm font-body">
+                    {selectedItem.item.suggestion.summary}
+                  </p>
+                  <div className="flex items-start gap-2 text-white/70 text-sm font-body">
+                    <MapPin className="w-4 h-4 mt-0.5 text-miami-blue shrink-0" />
+                    <span>{selectedItem.item.suggestion.address}</span>
+                  </div>
+                  <p className="text-xs font-mono text-white/55">
+                    {selectedItem.item.suggestion.distanceFromHouse}
+                  </p>
+                  <a
+                    href={selectedItem.item.suggestion.routeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg border border-miami-blue/45 bg-miami-blue/15 px-3 py-2 text-sm text-miami-blue hover:bg-miami-blue/25 transition-colors"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Abrir ruta
+                  </a>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}
