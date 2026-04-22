@@ -3,6 +3,7 @@ import { Anton, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import SpotifyPlayer from "@/components/SpotifyPlayer";
 import WelcomeModal from "@/components/WelcomeModal";
+import SecretAccessGate from "@/components/SecretAccessGate";
 
 const anton = Anton({
   weight: "400",
@@ -40,9 +41,11 @@ export default function RootLayout({
     >
       <body className="antialiased min-h-screen bg-background text-foreground overflow-x-hidden">
         <div className="grain-overlay" aria-hidden />
-        <WelcomeModal />
-        {children}
-        <SpotifyPlayer />
+        <SecretAccessGate>
+          <WelcomeModal />
+          {children}
+          <SpotifyPlayer />
+        </SecretAccessGate>
       </body>
     </html>
   );
