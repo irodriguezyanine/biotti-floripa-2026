@@ -189,18 +189,18 @@ export default function LocationSection() {
               onPointerUp={endPointerDrag}
               onPointerCancel={endPointerDrag}
               onPointerLeave={endPointerDrag}
-              className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 cursor-grab scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20 touch-pan-y"
+              className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 cursor-grab no-scrollbar touch-pan-x"
               aria-label="Carrusel de fotos de la casa"
             >
               {HOUSE_PHOTOS.map((url, index) => (
                 <div
                   key={url}
-                  className="rounded-xl overflow-hidden border border-white/15 bg-black/25 shrink-0 snap-start w-[82vw] sm:w-[52vw] lg:w-[34vw]"
+                  className="rounded-xl overflow-hidden border border-white/15 bg-black/25 shrink-0 snap-start w-[92vw] sm:w-[72vw] lg:w-[52vw] xl:w-[44vw]"
                 >
                   <img
                     src={url}
                     alt={`Casa en Florianópolis ${index + 1}`}
-                    className="w-full h-52 sm:h-64 object-cover select-none"
+                    className="w-full h-64 sm:h-80 object-cover select-none"
                     loading="lazy"
                     draggable={false}
                   />

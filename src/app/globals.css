@@ -67,3 +67,12 @@ body {
 .hover\:animate-glitch:hover {
   animation: glitch 0.25s ease-in-out infinite;
 }
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
