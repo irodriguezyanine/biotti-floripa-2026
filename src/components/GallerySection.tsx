@@ -584,10 +584,6 @@ export default function GallerySection() {
           </>
         )}
 
-        <div className="mt-8 flex items-center justify-center gap-2 text-white/45 text-xs font-body">
-          <Camera className="w-4 h-4" />
-          Las imágenes se almacenan en Cloudinary.
-        </div>
       </div>
     </section>
   );
