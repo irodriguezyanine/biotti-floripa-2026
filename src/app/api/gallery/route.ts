@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import {
+  applyCloudinaryConfigCandidate,
+  getCloudinaryConfigCandidates,
   getCloudinary,
   getCloudinaryErrorDetails,
   getGalleryFolder,
-  getCloudinaryRuntimeInfo,
 } from "@/lib/cloudinary";
 
 export const runtime = "nodejs";
@@ -29,64 +30,77 @@ export async function GET() {
   const diagnostics: string[] = [];
   try {
     const cloudinary = getCloudinary();
-    const runtimeInfo = getCloudinaryRuntimeInfo();
     const folder = getGalleryFolder();
-    let resources: CloudinarySearchResult[] = [];
+    const candidates = getCloudinaryConfigCandidates();
 
-    try {
-      const resourcesResult = await cloudinary.api.resources({
-        type: "upload",
-        prefix: `${folder}/`,
-        max_results: 100,
-        context: true,
-      });
-      resources = (resourcesResult.resources ?? []) as CloudinarySearchResult[];
-    } catch (apiError) {
-      diagnostics.push(`api.resources: ${getCloudinaryErrorDetails(apiError)}`);
-    }
+    for (const candidate of candidates) {
+      applyCloudinaryConfigCandidate(candidate);
+      let resources: CloudinarySearchResult[] = [];
+      const localDiagnostics: string[] = [];
 
-    // Fallback para cuentas/configuraciones donde api.resources puede fallar.
-    if (resources.length === 0) {
       try {
-        const searchResult = await cloudinary.search
-          .expression(`folder="${folder}" AND resource_type:image`)
-          .sort_by("created_at", "desc")
-          .max_results(100)
-          .with_field("context")
-          .execute();
-        resources = (searchResult.resources ?? []) as CloudinarySearchResult[];
-      } catch (searchError) {
-        diagnostics.push(`search: ${getCloudinaryErrorDetails(searchError)}`);
+        const resourcesResult = await cloudinary.api.resources({
+          type: "upload",
+          prefix: `${folder}/`,
+          max_results: 100,
+          context: true,
+        });
+        resources = (resourcesResult.resources ?? []) as CloudinarySearchResult[];
+      } catch (apiError) {
+        localDiagnostics.push(`api.resources: ${getCloudinaryErrorDetails(apiError)}`);
       }
-    }
 
-    const images = resources
-      .map((resource) => ({
-        id: resource.public_id,
-        url: resource.secure_url,
-        width: resource.width,
-        height: resource.height,
-        uploadedBy: resource.context?.custom?.uploader || "Anónimo",
-        message: resource.context?.custom?.message || "",
-        uploadedAt: toIsoDate(
-          resource.context?.custom?.uploaded_at || resource.created_at
-        ),
-      }))
-      .sort(
-        (a, b) =>
-          new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+      if (resources.length === 0) {
+        try {
+          const searchResult = await cloudinary.search
+            .expression(`folder="${folder}" AND resource_type:image`)
+            .sort_by("created_at", "desc")
+            .max_results(100)
+            .with_field("context")
+            .execute();
+          resources = (searchResult.resources ?? []) as CloudinarySearchResult[];
+        } catch (searchError) {
+          localDiagnostics.push(`search: ${getCloudinaryErrorDetails(searchError)}`);
+        }
+      }
+
+      if (resources.length > 0 || localDiagnostics.length === 0) {
+        const images = resources
+          .map((resource) => ({
+            id: resource.public_id,
+            url: resource.secure_url,
+            width: resource.width,
+            height: resource.height,
+            uploadedBy: resource.context?.custom?.uploader || "Anónimo",
+            message: resource.context?.custom?.message || "",
+            uploadedAt: toIsoDate(
+              resource.context?.custom?.uploaded_at || resource.created_at
+            ),
+          }))
+          .sort(
+            (a, b) =>
+              new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+          );
+
+        return NextResponse.json({
+          images,
+          warning:
+            localDiagnostics.length > 0
+              ? `${localDiagnostics.join(" | ")} | config: ${candidate.source}:${candidate.cloudName}`
+              : undefined,
+        });
+      }
+
+      diagnostics.push(
+        `${candidate.source}:${candidate.cloudName} => ${localDiagnostics.join(" | ")}`
       );
+    }
 
     return NextResponse.json({
-      images,
-      warning:
-        diagnostics.length > 0
-          ? `${diagnostics.join(" | ")}${
-              runtimeInfo
-                ? ` | config: ${runtimeInfo.source}:${runtimeInfo.cloudName}`
-                : ""
-            }`
-          : undefined,
+      images: [],
+      error: "No se pudo cargar la galería.",
+      details: diagnostics.join(" || "),
+      warning: diagnostics.join(" || "),
     });
   } catch (error) {
     console.error("Error cargando galería:", error);

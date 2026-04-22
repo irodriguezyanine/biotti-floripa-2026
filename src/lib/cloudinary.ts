@@ -1,13 +1,19 @@
 import { v2 as cloudinary } from "cloudinary";
 
-const requiredEnvs = [
-  "CLOUDINARY_CLOUD_NAME",
-  "CLOUDINARY_API_KEY",
-  "CLOUDINARY_API_SECRET",
-] as const;
+const requiredEnvs = ["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"] as const;
+type CloudinaryConfigSource = "url" | "split";
 
-let configured = false;
-let runtimeInfo: { source: "url" | "split"; cloudName: string } | null = null;
+export type CloudinaryConfigCandidate = {
+  source: CloudinaryConfigSource;
+  cloudName: string;
+  config: {
+    secure: true;
+    cloudinary_url?: string;
+    cloud_name?: string;
+    api_key?: string;
+    api_secret?: string;
+  };
+};
 
 function cleanEnvValue(value?: string) {
   if (!value) return "";
@@ -30,58 +36,66 @@ function sanitizeCloudinaryUrl(value: string) {
     .replace(/\s+/g, "");
 }
 
-function ensureCloudinaryConfig() {
-  if (configured) return;
-
+function readCandidatesFromEnv(): CloudinaryConfigCandidate[] {
+  const candidates: CloudinaryConfigCandidate[] = [];
   const cloudinaryUrl = sanitizeCloudinaryUrl(process.env.CLOUDINARY_URL ?? "");
   if (cloudinaryUrl) {
-    cloudinary.config({
-      cloudinary_url: cloudinaryUrl,
-      secure: true,
+    const maybeCloudName =
+      cloudinaryUrl.split("@")[1]?.split("?")[0]?.trim() || "desconocido";
+    candidates.push({
+      source: "url",
+      cloudName: maybeCloudName,
+      config: {
+        cloudinary_url: cloudinaryUrl,
+        secure: true,
+      },
     });
-    const maybeCloudName = cloudinaryUrl.split("@")[1]?.split("?")[0] ?? "desconocido";
-    runtimeInfo = { source: "url", cloudName: maybeCloudName };
-  } else {
-    const envCloudName = cleanEnvValue(process.env.CLOUDINARY_CLOUD_NAME);
-    const envApiKey = cleanEnvValue(process.env.CLOUDINARY_API_KEY);
-    const envApiSecret = cleanEnvValue(process.env.CLOUDINARY_API_SECRET);
-    const missing = requiredEnvs.filter((envName) => {
-      if (envName === "CLOUDINARY_CLOUD_NAME") return !envCloudName;
-      if (envName === "CLOUDINARY_API_KEY") return !envApiKey;
-      return !envApiSecret;
-    });
-    if (missing.length > 0) {
-      throw new Error(
-        `Faltan variables de entorno de Cloudinary: ${missing.join(
-          ", "
-        )}. O define CLOUDINARY_URL completo.`
-      );
-    }
-
-    cloudinary.config({
-      cloud_name: envCloudName,
-      api_key: envApiKey,
-      api_secret: envApiSecret,
-      secure: true,
-    });
-    runtimeInfo = { source: "split", cloudName: envCloudName };
   }
 
-  configured = true;
+  const envCloudName = cleanEnvValue(process.env.CLOUDINARY_CLOUD_NAME);
+  const envApiKey = cleanEnvValue(process.env.CLOUDINARY_API_KEY);
+  const envApiSecret = cleanEnvValue(process.env.CLOUDINARY_API_SECRET);
+  if (envCloudName && envApiKey && envApiSecret) {
+    candidates.push({
+      source: "split",
+      cloudName: envCloudName,
+      config: {
+        cloud_name: envCloudName,
+        api_key: envApiKey,
+        api_secret: envApiSecret,
+        secure: true,
+      },
+    });
+  }
+
+  return candidates;
+}
+
+export function getCloudinaryConfigCandidates() {
+  const candidates = readCandidatesFromEnv();
+  if (candidates.length === 0) {
+    const missing = requiredEnvs.filter((envName) => !cleanEnvValue(process.env[envName]));
+    throw new Error(
+      `Faltan variables de entorno de Cloudinary: ${missing.join(
+        ", "
+      )}. O define CLOUDINARY_URL completo.`
+    );
+  }
+  return candidates;
+}
+
+export function applyCloudinaryConfigCandidate(candidate: CloudinaryConfigCandidate) {
+  cloudinary.config(candidate.config);
 }
 
 export function getCloudinary() {
-  ensureCloudinaryConfig();
+  const [firstCandidate] = getCloudinaryConfigCandidates();
+  applyCloudinaryConfigCandidate(firstCandidate);
   return cloudinary;
 }
 
 export function getGalleryFolder() {
   return process.env.CLOUDINARY_UPLOAD_FOLDER || "biotti-floripa-2026/gallery";
-}
-
-export function getCloudinaryRuntimeInfo() {
-  ensureCloudinaryConfig();
-  return runtimeInfo;
 }
 
 export function normalizeCloudinaryText(value: string) {

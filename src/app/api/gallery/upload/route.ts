@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import {
+  applyCloudinaryConfigCandidate,
+  getCloudinaryConfigCandidates,
   getCloudinary,
   getCloudinaryErrorDetails,
   getGalleryFolder,
@@ -17,7 +19,7 @@ function toIsoDate(value?: string) {
   return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
 }
 
-function uploadToCloudinary(
+async function uploadToCloudinary(
   fileBuffer: Buffer,
   opts: {
     uploaderName: string;
@@ -27,6 +29,7 @@ function uploadToCloudinary(
 ) {
   const cloudinary = getCloudinary();
   const folder = getGalleryFolder();
+  const candidates = getCloudinaryConfigCandidates();
   const safeMessage = normalizeCloudinaryText(opts.message);
   const safeUploader = normalizeCloudinaryText(opts.uploaderName);
   const contextParts = [
@@ -36,34 +39,49 @@ function uploadToCloudinary(
   if (safeMessage) contextParts.push(`message=${safeMessage}`);
   const context = contextParts.join("|");
 
-  return new Promise<{
-    public_id: string;
-    secure_url: string;
-    width: number;
-    height: number;
-    created_at: string;
-    context?: {
-      custom?: Record<string, string>;
-    };
-  }>((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        folder,
-        resource_type: "image",
-        overwrite: false,
-        context,
-      },
-      (error, result) => {
-        if (error || !result) {
-          reject(error ?? new Error("No se pudo subir la imagen a Cloudinary."));
-          return;
-        }
-        resolve(result);
-      }
-    );
+  const errors: string[] = [];
 
-    stream.end(fileBuffer);
-  });
+  for (const candidate of candidates) {
+    applyCloudinaryConfigCandidate(candidate);
+    try {
+      const result = await new Promise<{
+        public_id: string;
+        secure_url: string;
+        width: number;
+        height: number;
+        created_at: string;
+        context?: {
+          custom?: Record<string, string>;
+        };
+      }>((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder,
+            resource_type: "image",
+            overwrite: false,
+            context,
+          },
+          (error, uploadResult) => {
+            if (error || !uploadResult) {
+              reject(error ?? new Error("No se pudo subir la imagen a Cloudinary."));
+              return;
+            }
+            resolve(uploadResult);
+          }
+        );
+        stream.end(fileBuffer);
+      });
+      return result;
+    } catch (error) {
+      errors.push(
+        `${candidate.source}:${candidate.cloudName} => ${getCloudinaryErrorDetails(
+          error
+        )}`
+      );
+    }
+  }
+
+  throw new Error(errors.join(" || "));
 }
 
 export async function POST(request: Request) {
