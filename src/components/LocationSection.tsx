@@ -1,7 +1,8 @@
 "use client";
 
+import { type KeyboardEvent, type PointerEvent, useRef } from "react";
 import { motion } from "framer-motion";
-import { ExternalLink, Home, MapPin } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Home, MapPin } from "lucide-react";
 
 const LOCATION_QUERY =
   "Av. dos Búzios, Jurerê, Florianópolis, Santa Catarina, Brasil";
@@ -22,6 +23,67 @@ const HOUSE_PHOTOS = [
 ];
 
 export default function LocationSection() {
+  const houseCarouselRef = useRef<HTMLDivElement>(null);
+  const dragStateRef = useRef({
+    isDragging: false,
+    startX: 0,
+    scrollLeft: 0,
+  });
+
+  function scrollHousePhotos(direction: "left" | "right") {
+    const container = houseCarouselRef.current;
+    if (!container) return;
+    const shift = Math.max(container.clientWidth * 0.78, 260);
+    container.scrollBy({
+      left: direction === "right" ? shift : -shift,
+      behavior: "smooth",
+    });
+  }
+
+  function handleCarouselKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      scrollHousePhotos("right");
+      return;
+    }
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      scrollHousePhotos("left");
+      return;
+    }
+    if (event.key === " ") {
+      event.preventDefault();
+      scrollHousePhotos(event.shiftKey ? "left" : "right");
+    }
+  }
+
+  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
+    const container = houseCarouselRef.current;
+    if (!container) return;
+    dragStateRef.current.isDragging = true;
+    dragStateRef.current.startX = event.clientX;
+    dragStateRef.current.scrollLeft = container.scrollLeft;
+    container.setPointerCapture(event.pointerId);
+    container.classList.add("cursor-grabbing");
+  }
+
+  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
+    const container = houseCarouselRef.current;
+    if (!container || !dragStateRef.current.isDragging) return;
+    const delta = event.clientX - dragStateRef.current.startX;
+    container.scrollLeft = dragStateRef.current.scrollLeft - delta;
+  }
+
+  function endPointerDrag(event: PointerEvent<HTMLDivElement>) {
+    const container = houseCarouselRef.current;
+    if (!container || !dragStateRef.current.isDragging) return;
+    dragStateRef.current.isDragging = false;
+    if (container.hasPointerCapture(event.pointerId)) {
+      container.releasePointerCapture(event.pointerId);
+    }
+    container.classList.remove("cursor-grabbing");
+  }
+
   return (
     <section id="location" className="relative py-24 px-4 overflow-hidden">
       <div
@@ -90,25 +152,61 @@ export default function LocationSection() {
           viewport={{ once: true }}
           className="glass-card rounded-2xl border border-white/20 p-4 sm:p-6"
         >
-          <div className="flex items-center gap-2 mb-4 text-white">
-            <Home className="w-5 h-5 text-neon-pink" />
-            <h3 className="font-display text-2xl">Fotos de la Casa</h3>
+          <div className="flex items-center justify-between gap-4 mb-4 text-white">
+            <div className="flex items-center gap-2">
+              <Home className="w-5 h-5 text-neon-pink" />
+              <h3 className="font-display text-2xl">Fotos de la Casa</h3>
+            </div>
+            <p className="font-body text-xs sm:text-sm text-white/65">
+              Desliza, arrastra o usa espacio/flechas
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {HOUSE_PHOTOS.map((url, index) => (
-              <div
-                key={url}
-                className="rounded-xl overflow-hidden border border-white/15 bg-black/25"
-              >
-                <img
-                  src={url}
-                  alt={`Casa en Florianópolis ${index + 1}`}
-                  className="w-full h-52 object-cover"
-                  loading="lazy"
-                />
-              </div>
-            ))}
+          <div className="relative group">
+            <button
+              type="button"
+              onClick={() => scrollHousePhotos("left")}
+              className="absolute left-0 top-0 z-10 h-full w-12 sm:w-16 bg-gradient-to-r from-black/35 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
+              aria-label="Ver fotos anteriores"
+            >
+              <ChevronLeft className="mx-2 sm:mx-4 w-5 h-5 text-white/80" />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollHousePhotos("right")}
+              className="absolute right-0 top-0 z-10 h-full w-12 sm:w-16 bg-gradient-to-l from-black/35 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
+              aria-label="Ver fotos siguientes"
+            >
+              <ChevronRight className="ml-auto mr-2 sm:mr-4 w-5 h-5 text-white/80" />
+            </button>
+
+            <div
+              ref={houseCarouselRef}
+              tabIndex={0}
+              onKeyDown={handleCarouselKeyDown}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={endPointerDrag}
+              onPointerCancel={endPointerDrag}
+              onPointerLeave={endPointerDrag}
+              className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 cursor-grab scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20 touch-pan-y"
+              aria-label="Carrusel de fotos de la casa"
+            >
+              {HOUSE_PHOTOS.map((url, index) => (
+                <div
+                  key={url}
+                  className="rounded-xl overflow-hidden border border-white/15 bg-black/25 shrink-0 snap-start w-[82vw] sm:w-[52vw] lg:w-[34vw]"
+                >
+                  <img
+                    src={url}
+                    alt={`Casa en Florianópolis ${index + 1}`}
+                    className="w-full h-52 sm:h-64 object-cover select-none"
+                    loading="lazy"
+                    draggable={false}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </motion.div>
       </div>
