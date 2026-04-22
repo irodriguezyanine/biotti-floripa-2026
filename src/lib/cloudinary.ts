@@ -7,18 +7,49 @@ const requiredEnvs = [
 ] as const;
 
 let configured = false;
+let runtimeInfo: { source: "url" | "split"; cloudName: string } | null = null;
+
+function cleanEnvValue(value?: string) {
+  if (!value) return "";
+  let cleaned = value.trim();
+  if (
+    (cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+    (cleaned.startsWith("'") && cleaned.endsWith("'"))
+  ) {
+    cleaned = cleaned.slice(1, -1);
+  }
+  if (cleaned.startsWith("<") && cleaned.endsWith(">")) {
+    cleaned = cleaned.slice(1, -1);
+  }
+  return cleaned.trim();
+}
+
+function sanitizeCloudinaryUrl(value: string) {
+  return cleanEnvValue(value)
+    .replace(/<([^>]+)>/g, "$1")
+    .replace(/\s+/g, "");
+}
 
 function ensureCloudinaryConfig() {
   if (configured) return;
 
-  const cloudinaryUrl = process.env.CLOUDINARY_URL?.trim();
+  const cloudinaryUrl = sanitizeCloudinaryUrl(process.env.CLOUDINARY_URL ?? "");
   if (cloudinaryUrl) {
     cloudinary.config({
       cloudinary_url: cloudinaryUrl,
       secure: true,
     });
+    const maybeCloudName = cloudinaryUrl.split("@")[1]?.split("?")[0] ?? "desconocido";
+    runtimeInfo = { source: "url", cloudName: maybeCloudName };
   } else {
-    const missing = requiredEnvs.filter((envName) => !process.env[envName]);
+    const envCloudName = cleanEnvValue(process.env.CLOUDINARY_CLOUD_NAME);
+    const envApiKey = cleanEnvValue(process.env.CLOUDINARY_API_KEY);
+    const envApiSecret = cleanEnvValue(process.env.CLOUDINARY_API_SECRET);
+    const missing = requiredEnvs.filter((envName) => {
+      if (envName === "CLOUDINARY_CLOUD_NAME") return !envCloudName;
+      if (envName === "CLOUDINARY_API_KEY") return !envApiKey;
+      return !envApiSecret;
+    });
     if (missing.length > 0) {
       throw new Error(
         `Faltan variables de entorno de Cloudinary: ${missing.join(
@@ -28,11 +59,12 @@ function ensureCloudinaryConfig() {
     }
 
     cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
+      cloud_name: envCloudName,
+      api_key: envApiKey,
+      api_secret: envApiSecret,
       secure: true,
     });
+    runtimeInfo = { source: "split", cloudName: envCloudName };
   }
 
   configured = true;
@@ -45,6 +77,11 @@ export function getCloudinary() {
 
 export function getGalleryFolder() {
   return process.env.CLOUDINARY_UPLOAD_FOLDER || "biotti-floripa-2026/gallery";
+}
+
+export function getCloudinaryRuntimeInfo() {
+  ensureCloudinaryConfig();
+  return runtimeInfo;
 }
 
 export function normalizeCloudinaryText(value: string) {

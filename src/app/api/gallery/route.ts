@@ -3,6 +3,7 @@ import {
   getCloudinary,
   getCloudinaryErrorDetails,
   getGalleryFolder,
+  getCloudinaryRuntimeInfo,
 } from "@/lib/cloudinary";
 
 export const runtime = "nodejs";
@@ -28,6 +29,7 @@ export async function GET() {
   const diagnostics: string[] = [];
   try {
     const cloudinary = getCloudinary();
+    const runtimeInfo = getCloudinaryRuntimeInfo();
     const folder = getGalleryFolder();
     let resources: CloudinarySearchResult[] = [];
 
@@ -77,7 +79,14 @@ export async function GET() {
 
     return NextResponse.json({
       images,
-      warning: diagnostics.length > 0 ? diagnostics.join(" | ") : undefined,
+      warning:
+        diagnostics.length > 0
+          ? `${diagnostics.join(" | ")}${
+              runtimeInfo
+                ? ` | config: ${runtimeInfo.source}:${runtimeInfo.cloudName}`
+                : ""
+            }`
+          : undefined,
     });
   } catch (error) {
     console.error("Error cargando galería:", error);
