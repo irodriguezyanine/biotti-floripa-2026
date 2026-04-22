@@ -20,7 +20,7 @@ const CREW: CrewMember[] = [
   {
     name: "Biotti",
     fullName: "Sebastián Biotti",
-    nickname: "Ben10 - A",
+    nickname: "Benjamin Vicuña, Ricardo Arjona, Biotti, Ben10, Lula, Sebita",
     age: 31,
     bio: "El novio. Capitán de la misión Floripa y creador oficial del caos controlado.",
     photoUrl:
@@ -30,38 +30,48 @@ const CREW: CrewMember[] = [
   },
   {
     name: "Nacho",
-    fullName: "Ignacio Rodríguez Yañez",
-    nickname: "El Productor",
+    fullName: "Ignacio Rodríguez Yanine",
+    nickname: "Nachorezha, Nacho",
     age: 31,
-    bio: "Siempre con plan B, plan C y playlist lista para la previa.",
+    bio: "Organizador de la despedida y creador de esta página. Siempre con plan B, plan C y logística al minuto.",
+    photoUrl:
+      "https://res.cloudinary.com/dindgpi3d/image/upload/v1776828867/biotti-floripa-2026/gallery/tczzueuwslouzjsd7gpw.jpg",
   },
   {
     name: "Manuel",
     fullName: "Manuel Catepillan",
-    nickname: "Caterpillar",
-    age: 30,
+    nickname: "Bolados, Manuel",
+    age: 31,
     bio: "Experto en dinámicas de grupo y host oficial de la noche.",
+    photoUrl:
+      "https://res.cloudinary.com/dindgpi3d/image/upload/v1776828966/biotti-floripa-2026/gallery/k2sa01uihnc7i5dfggov.jpg",
   },
   {
-    name: "Jt Molina",
-    fullName: "J.T. Molina",
-    nickname: "JT Turbo",
+    name: "Momo",
+    fullName: "Jose Tomas Molino Niño Quesepeda",
+    nickname: "Momo, Molina, Joseto, JT",
     age: 31,
     bio: "Motor de la logística y primer voluntario para cualquier locura.",
+    photoUrl:
+      "https://res.cloudinary.com/dindgpi3d/image/upload/v1776829175/biotti-floripa-2026/gallery/ke5bcczq30sawrom2kw6.png",
   },
   {
     name: "Joaco Honorato",
     fullName: "Joaquín Honorato",
-    nickname: "Joaco Waves",
-    age: 30,
+    nickname: "Joaco, honorato",
+    age: 31,
     bio: "Encargado de buena vibra y scouting de spots para el grupo.",
+    photoUrl:
+      "https://res.cloudinary.com/dindgpi3d/image/upload/v1776829603/biotti-floripa-2026/gallery/iggpty2qky1cidycrrwf.png",
   },
   {
     name: "Javier Vargas",
     fullName: "Javier Vargas",
-    nickname: "Javi Vibes",
+    nickname: "Vargas",
     age: 31,
     bio: "Controla el tempo del equipo, dentro y fuera de la cancha.",
+    photoUrl:
+      "https://res.cloudinary.com/dindgpi3d/image/upload/v1776829375/biotti-floripa-2026/gallery/aoijt4xx1h9e14cx3eyt.png",
   },
   {
     name: "Mandiola",
@@ -73,23 +83,29 @@ const CREW: CrewMember[] = [
   {
     name: "Pedro De Diego",
     fullName: "Pedro De Diego",
-    nickname: "Pedrito Flow",
-    age: 30,
+    nickname: "Depedro, Dediego, Pedro",
+    age: 31,
     bio: "Siempre listo para playa, asado y tercer tiempo.",
+    photoUrl:
+      "https://res.cloudinary.com/dindgpi3d/image/upload/v1776829437/biotti-floripa-2026/gallery/crq6kedfhzfytyaamf5v.png",
   },
   {
     name: "Seba Valenzuela",
     fullName: "Sebastián Valenzuela",
-    nickname: "Seba V",
+    nickname: "Seba, Venezuela",
     age: 31,
     bio: "Refuerzo confirmado para mantener arriba el ánimo del grupo.",
+    photoUrl:
+      "https://res.cloudinary.com/dindgpi3d/image/upload/v1776829538/biotti-floripa-2026/gallery/g5nyizbsscsk8fxs4o5a.png",
   },
   {
     name: "Felipe Bravo",
     fullName: "Felipe Bravo",
-    nickname: "Pipe Bravo",
-    age: 30,
+    nickname: "Bravo",
+    age: 31,
     bio: "Jugador versátil: suma en logística, fiesta y post partido.",
+    photoUrl:
+      "https://res.cloudinary.com/dindgpi3d/image/upload/v1776829262/biotti-floripa-2026/gallery/w8l4lb9vruvbibvl8kxf.png",
   },
 ];
 
@@ -201,11 +217,11 @@ export default function Squad() {
                 "w-full max-w-xl rounded-2xl border border-white/25 glass-card overflow-hidden"
               )}
             >
-              <div className="relative h-64 sm:h-72 bg-black/25">
+              <div className="relative h-64 sm:h-72 bg-black/35">
                 <img
                   src={selectedMember.photoUrl || "/party-brasil.png"}
                   alt={`Foto de ${selectedMember.fullName}`}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-contain"
                 />
                 <button
                   type="button"
@@ -226,13 +242,7 @@ export default function Squad() {
                 <p className="text-neon-pink font-body text-sm mt-1">
                   Sobrenombre: {selectedMember.nickname}
                 </p>
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-white/15 bg-white/5 px-3 py-2">
-                    <p className="text-[11px] uppercase tracking-wider text-white/55 font-mono">
-                      Nombre corto
-                    </p>
-                    <p className="text-white font-body font-semibold">{selectedMember.name}</p>
-                  </div>
+                <div className="mt-4 grid grid-cols-1 gap-3">
                   <div className="rounded-xl border border-white/15 bg-white/5 px-3 py-2">
                     <p className="text-[11px] uppercase tracking-wider text-white/55 font-mono">
                       Edad

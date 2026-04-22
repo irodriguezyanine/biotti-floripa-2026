@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import {
   Calendar,
   Clock,
-  MapPin,
   Plane,
   UtensilsCrossed,
   X,
@@ -416,13 +415,6 @@ export default function Itinerary() {
               <p className="mt-4 text-white/85 font-body leading-relaxed">
                 {selectedItem.item.description}
               </p>
-
-              {!selectedItem.item.isFlight && (
-                <div className="mt-4 inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs text-white/70 font-body">
-                  <MapPin className="w-4 h-4 text-neon-pink" />
-                  Click en cada bloque para ver detalle de la actividad.
-                </div>
-              )}
             </motion.div>
           </motion.div>
         )}

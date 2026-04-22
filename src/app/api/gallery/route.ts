@@ -26,6 +26,17 @@ function toIsoDate(value?: string) {
   return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
 }
 
+function isCrewProfileAsset(resource: CloudinarySearchResult) {
+  const message = (resource.context?.custom?.message || "").toLowerCase();
+  const explicitProfileFlag =
+    (resource.context?.custom?.asset_type || "").toLowerCase() === "profile";
+  return (
+    explicitProfileFlag ||
+    message.includes("foto perfil") ||
+    message.includes("[perfil]")
+  );
+}
+
 export async function GET() {
   const diagnostics: string[] = [];
   try {
@@ -66,6 +77,7 @@ export async function GET() {
 
       if (resources.length > 0 || localDiagnostics.length === 0) {
         const images = resources
+          .filter((resource) => !isCrewProfileAsset(resource))
           .map((resource) => ({
             id: resource.public_id,
             url: resource.secure_url,
