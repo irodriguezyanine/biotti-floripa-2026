@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { randomBytes } from "node:crypto";
 import {
   applyCloudinaryConfigCandidate,
   getCloudinaryConfigCandidates,
@@ -25,6 +26,7 @@ async function uploadToCloudinary(
     uploaderName: string;
     message: string;
     uploadedAt: string;
+    ownerToken: string;
   }
 ) {
   const cloudinary = getCloudinary();
@@ -35,6 +37,7 @@ async function uploadToCloudinary(
   const contextParts = [
     `uploader=${safeUploader}`,
     `uploaded_at=${opts.uploadedAt}`,
+    `owner_token=${opts.ownerToken}`,
   ];
   if (safeMessage) contextParts.push(`message=${safeMessage}`);
   const context = contextParts.join("|");
@@ -128,31 +131,42 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: firstValidationError }, { status: 400 });
     }
 
-    const images = await Promise.all(
+    const uploaded = await Promise.all(
       files.map(async (file) => {
         const uploadedAtIso = new Date().toISOString();
+        const ownerToken = randomBytes(24).toString("hex");
         const arrayBuffer = await file.arrayBuffer();
         const fileBuffer = Buffer.from(arrayBuffer);
         const result = await uploadToCloudinary(fileBuffer, {
           uploaderName,
           message,
           uploadedAt: uploadedAtIso,
+          ownerToken,
         });
         const customContext = result.context?.custom ?? {};
 
         return {
-          id: result.public_id,
-          url: result.secure_url,
-          width: result.width,
-          height: result.height,
-          uploadedBy: customContext.uploader || uploaderName,
-          message: customContext.message || message || "",
-          uploadedAt: toIsoDate(customContext.uploaded_at || result.created_at),
+          image: {
+            id: result.public_id,
+            url: result.secure_url,
+            width: result.width,
+            height: result.height,
+            uploadedBy: customContext.uploader || uploaderName,
+            message: customContext.message || message || "",
+            uploadedAt: toIsoDate(customContext.uploaded_at || result.created_at),
+          },
+          ownership: {
+            id: result.public_id,
+            deleteToken: ownerToken,
+          },
         };
       })
     );
 
-    return NextResponse.json({ images });
+    return NextResponse.json({
+      images: uploaded.map((item) => item.image),
+      ownershipTokens: uploaded.map((item) => item.ownership),
+    });
   } catch (error) {
     console.error("Error en subida de galería:", error);
     const details = getCloudinaryErrorDetails(error);

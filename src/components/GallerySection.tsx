@@ -9,8 +9,10 @@ import {
   ImagePlus,
   Loader2,
   MessageSquare,
+  Trash2,
   Upload,
   User,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +26,20 @@ type GalleryImage = {
   uploadedAt: string;
 };
 
+type OwnershipToken = {
+  id: string;
+  deleteToken: string;
+};
+
+type SelectedPreview = {
+  key: string;
+  name: string;
+  size: number;
+  url: string;
+};
+
+const OWNERSHIP_STORAGE_KEY = "biotti-gallery-ownership-v1";
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("es-CL", {
     dateStyle: "medium",
@@ -31,18 +47,38 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function readOwnershipMap(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(OWNERSHIP_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, string>;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeOwnershipMap(map: Record<string, string>) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(OWNERSHIP_STORAGE_KEY, JSON.stringify(map));
+}
+
 export default function GallerySection() {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState("");
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
 
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedPreviews, setSelectedPreviews] = useState<SelectedPreview[]>([]);
   const [uploaderName, setUploaderName] = useState("");
   const [message, setMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const [ownershipMap, setOwnershipMap] = useState<Record<string, string>>({});
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const canSubmit = useMemo(() => {
@@ -61,10 +97,45 @@ export default function GallerySection() {
     return `${totalMb.toFixed(1)} MB en total`;
   }, [selectedFiles]);
 
+  const imagesWithOwnership = useMemo(
+    () =>
+      images.map((image) => ({
+        ...image,
+        isOwned: Boolean(ownershipMap[image.id]),
+      })),
+    [images, ownershipMap]
+  );
+
   function onSelectFiles(files: FileList | null) {
     if (!files) return;
-    const next = Array.from(files).filter((file) => file.type.startsWith("image/"));
-    setSelectedFiles(next.slice(0, 10));
+    const incoming = Array.from(files).filter((file) =>
+      file.type.startsWith("image/")
+    );
+    setSelectedFiles((previous) => {
+      const merged = [...previous];
+      for (const file of incoming) {
+        const exists = merged.some(
+          (item) => item.name === file.name && item.size === file.size
+        );
+        if (!exists) merged.push(file);
+        if (merged.length >= 10) break;
+      }
+      return merged.slice(0, 10);
+    });
+  }
+
+  function removeSelectedFile(targetFile: File) {
+    setSelectedFiles((previous) =>
+      previous.filter(
+        (file) => !(file.name === targetFile.name && file.size === targetFile.size)
+      )
+    );
+  }
+
+  function clearSelectedFiles() {
+    setSelectedFiles([]);
+    const fileInput = document.getElementById("gallery-file-input") as HTMLInputElement | null;
+    if (fileInput) fileInput.value = "";
   }
 
   function scrollCarousel(direction: "left" | "right") {
@@ -93,7 +164,7 @@ export default function GallerySection() {
             "No se pudo cargar la galería."
         );
       }
-      setImages(Array.isArray(data.images) ? data.images : []);
+      setImages(Array.isArray(data.images) ? (data.images as GalleryImage[]) : []);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error desconocido";
       setError(message);
@@ -103,8 +174,22 @@ export default function GallerySection() {
   }
 
   useEffect(() => {
+    setOwnershipMap(readOwnershipMap());
     void loadGallery();
   }, []);
+
+  useEffect(() => {
+    const previews = selectedFiles.map((file) => ({
+      key: `${file.name}-${file.size}-${file.lastModified}`,
+      name: file.name,
+      size: file.size,
+      url: URL.createObjectURL(file),
+    }));
+    setSelectedPreviews(previews);
+    return () => {
+      previews.forEach((preview) => URL.revokeObjectURL(preview.url));
+    };
+  }, [selectedFiles]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -133,7 +218,23 @@ export default function GallerySection() {
         );
       }
 
-      const uploadedImages = Array.isArray(data?.images) ? (data.images as GalleryImage[]) : [];
+      const uploadedImages = Array.isArray(data?.images)
+        ? (data.images as GalleryImage[])
+        : [];
+      const ownershipTokens = Array.isArray(data?.ownershipTokens)
+        ? (data.ownershipTokens as OwnershipToken[])
+        : [];
+      if (ownershipTokens.length > 0) {
+        setOwnershipMap((previous) => {
+          const next = { ...previous };
+          ownershipTokens.forEach((item) => {
+            if (item?.id && item?.deleteToken) next[item.id] = item.deleteToken;
+          });
+          writeOwnershipMap(next);
+          return next;
+        });
+      }
+
       if (uploadedImages.length > 0) {
         setImages((previous) => [...uploadedImages, ...previous]);
         setSuccessMessage(
@@ -143,14 +244,51 @@ export default function GallerySection() {
         );
       }
 
-      setSelectedFiles([]);
-      const fileInput = document.getElementById("gallery-file-input") as HTMLInputElement | null;
-      if (fileInput) fileInput.value = "";
+      clearSelectedFiles();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error desconocido";
       setError(message);
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function onDeleteImage(imageId: string) {
+    const deleteToken = ownershipMap[imageId];
+    if (!deleteToken || deletingId) return;
+    const confirmed = window.confirm("¿Seguro que quieres eliminar esta foto?");
+    if (!confirmed) return;
+
+    setDeletingId(imageId);
+    setError("");
+    setSuccessMessage("");
+    try {
+      const response = await fetch("/api/gallery/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageId, deleteToken }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          [data?.error, data?.details].filter(Boolean).join(" · ") ||
+            "No se pudo eliminar la foto."
+        );
+      }
+
+      setImages((previous) => previous.filter((image) => image.id !== imageId));
+      setOwnershipMap((previous) => {
+        const next = { ...previous };
+        delete next[imageId];
+        writeOwnershipMap(next);
+        return next;
+      });
+      setSuccessMessage("Foto eliminada con éxito.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error desconocido";
+      setError(message);
+    } finally {
+      setDeletingId("");
     }
   }
 
@@ -238,15 +376,39 @@ export default function GallerySection() {
                 </div>
               </label>
               {selectedFiles.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {selectedFiles.map((file) => (
-                    <span
-                      key={`${file.name}-${file.size}`}
-                      className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-white/80 font-body"
-                    >
-                      {file.name}
-                    </span>
-                  ))}
+                <div className="mt-3 space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {selectedPreviews.map((preview, index) => (
+                      <div
+                        key={preview.key}
+                        className="relative rounded-xl overflow-hidden border border-white/20 bg-black/20"
+                      >
+                        <img
+                          src={preview.url}
+                          alt={`Preview ${preview.name}`}
+                          className="h-24 w-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const target = selectedFiles[index];
+                            if (target) removeSelectedFile(target);
+                          }}
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 border border-white/20 text-white/90 flex items-center justify-center hover:bg-black"
+                          aria-label={`Quitar ${preview.name}`}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearSelectedFiles}
+                    className="text-xs text-white/60 hover:text-white/85 transition-colors font-body"
+                  >
+                    Limpiar selección
+                  </button>
                 </div>
               )}
             </div>
@@ -333,7 +495,7 @@ export default function GallerySection() {
             <Loader2 className="w-5 h-5 animate-spin" />
             Cargando galería...
           </div>
-        ) : images.length === 0 ? (
+        ) : imagesWithOwnership.length === 0 ? (
           <div className="glass-card rounded-2xl p-8 text-center text-white/70 font-body">
             Aún no hay fotos subidas. Sé el primero en compartir una.
           </div>
@@ -366,7 +528,7 @@ export default function GallerySection() {
               ref={carouselRef}
               className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20"
             >
-              {images.map((image) => (
+              {imagesWithOwnership.map((image) => (
                 <motion.article
                   key={image.id}
                   initial={{ opacity: 0, y: 14 }}
@@ -383,10 +545,27 @@ export default function GallerySection() {
                     />
                   </div>
                   <div className="p-4 space-y-2">
-                    <p className="inline-flex items-center gap-2 text-white font-body font-semibold">
-                      <User className="w-4 h-4 text-miami-blue" />
-                      {image.uploadedBy}
-                    </p>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="inline-flex items-center gap-2 text-white font-body font-semibold min-w-0">
+                        <User className="w-4 h-4 text-miami-blue shrink-0" />
+                        <span className="truncate">{image.uploadedBy}</span>
+                      </p>
+                      {image.isOwned && (
+                        <button
+                          type="button"
+                          onClick={() => onDeleteImage(image.id)}
+                          disabled={deletingId === image.id}
+                          className="inline-flex items-center gap-1 rounded-lg border border-rose-400/40 bg-rose-500/10 px-2 py-1 text-[11px] text-rose-200 hover:bg-rose-500/20 disabled:opacity-60"
+                        >
+                          {deletingId === image.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3 h-3" />
+                          )}
+                          Eliminar
+                        </button>
+                      )}
+                    </div>
                     <p className="text-xs text-white/60 font-mono">
                       {formatDate(image.uploadedAt)}
                     </p>
