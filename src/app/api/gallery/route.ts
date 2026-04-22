@@ -21,17 +21,50 @@ function toIsoDate(value?: string) {
 }
 
 export async function GET() {
+  const diagnostics: string[] = [];
   try {
     const cloudinary = getCloudinary();
     const folder = getGalleryFolder();
-    const resourcesResult = await cloudinary.api.resources({
-      type: "upload",
-      prefix: `${folder}/`,
-      max_results: 100,
-      context: true,
-    });
+    let resources: CloudinarySearchResult[] = [];
 
-    const images = ((resourcesResult.resources ?? []) as CloudinarySearchResult[])
+    try {
+      const resourcesResult = await cloudinary.api.resources({
+        type: "upload",
+        prefix: `${folder}/`,
+        max_results: 100,
+        context: true,
+      });
+      resources = (resourcesResult.resources ?? []) as CloudinarySearchResult[];
+    } catch (apiError) {
+      diagnostics.push(
+        `api.resources: ${
+          apiError instanceof Error ? apiError.message : "error desconocido"
+        }`
+      );
+    }
+
+    // Fallback para cuentas/configuraciones donde api.resources puede fallar.
+    if (resources.length === 0) {
+      try {
+        const searchResult = await cloudinary.search
+          .expression(`folder="${folder}" AND resource_type:image`)
+          .sort_by("created_at", "desc")
+          .max_results(100)
+          .with_field("context")
+          .execute();
+        resources = (searchResult.resources ?? []) as CloudinarySearchResult[];
+      } catch (searchError) {
+        diagnostics.push(
+          `search: ${
+            searchError instanceof Error
+              ? searchError.message
+              : "error desconocido"
+          }`
+        );
+      }
+    }
+
+    const images = resources
       .map((resource) => ({
         id: resource.public_id,
         url: resource.secure_url,
@@ -48,14 +81,19 @@ export async function GET() {
           new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
       );
 
-    return NextResponse.json({ images });
+    return NextResponse.json({
+      images,
+      warning: diagnostics.length > 0 ? diagnostics.join(" | ") : undefined,
+    });
   } catch (error) {
     console.error("Error cargando galería:", error);
     const details =
       error instanceof Error ? error.message : "Error desconocido al listar";
-    return NextResponse.json(
-      { error: "No se pudo cargar la galería.", details },
-      { status: 500 }
-    );
+    // Evitamos tirar 500 para no romper la UI y poder seguir subiendo fotos.
+    return NextResponse.json({
+      images: [],
+      error: "No se pudo cargar la galería.",
+      details,
+    });
   }
 }

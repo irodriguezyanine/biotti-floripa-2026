@@ -36,6 +36,7 @@ export default function GallerySection() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
 
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploaderName, setUploaderName] = useState("");
@@ -79,11 +80,18 @@ export default function GallerySection() {
   async function loadGallery() {
     setSuccessMessage("");
     setError("");
+    setWarning("");
     try {
       const response = await fetch("/api/gallery", { cache: "no-store" });
       const data = await response.json();
+      if (typeof data?.warning === "string" && data.warning.trim().length > 0) {
+        setWarning(data.warning);
+      }
       if (!response.ok) {
-        throw new Error(data?.error || "No se pudo cargar la galería.");
+        throw new Error(
+          [data?.error, data?.details].filter(Boolean).join(" · ") ||
+            "No se pudo cargar la galería."
+        );
       }
       setImages(Array.isArray(data.images) ? data.images : []);
     } catch (err) {
@@ -119,7 +127,10 @@ export default function GallerySection() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error || "No se pudo subir la imagen.");
+        throw new Error(
+          [data?.error, data?.details].filter(Boolean).join(" · ") ||
+            "No se pudo subir la imagen."
+        );
       }
 
       const uploadedImages = Array.isArray(data?.images) ? (data.images as GalleryImage[]) : [];
@@ -304,6 +315,11 @@ export default function GallerySection() {
         {error && (
           <div className="mb-6 rounded-lg border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-rose-200 text-sm font-body">
             {error}
+          </div>
+        )}
+        {warning && (
+          <div className="mb-6 rounded-lg border border-amber-400/35 bg-amber-500/10 px-4 py-3 text-amber-200 text-xs font-mono break-words">
+            {warning}
           </div>
         )}
         {successMessage && (
