@@ -3,7 +3,24 @@
 import { motion } from "framer-motion";
 import Countdown from "./Countdown";
 import { cn } from "@/lib/utils";
-import { Plane } from "lucide-react";
+import {
+  CalendarDays,
+  Camera,
+  Film,
+  MapPin,
+  Plane,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
+
+const QUICK_SECTION_LINKS = [
+  { href: "#crew", label: "Ir a equipo", icon: Users },
+  { href: "#flight", label: "Ir a cronograma de vuelos", icon: Plane },
+  { href: "#itinerary", label: "Ir a itinerario", icon: CalendarDays },
+  { href: "#location", label: "Ir a ubicación", icon: MapPin },
+  { href: "#videos", label: "Ir a videos", icon: Film },
+  { href: "#gallery", label: "Ir a galería", icon: Camera },
+];
 
 export default function Hero() {
   return (
@@ -53,21 +70,39 @@ export default function Hero() {
           Jueves 21 — Domingo 24 Mayo 2026 · Florianópolis, Brasil
         </motion.p>
 
-        <motion.a
-          href="#flight"
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.1, duration: 0.5 }}
-          className={cn(
-            "inline-flex items-center gap-2 mt-10 sm:mt-12 px-6 py-4 rounded-lg font-body font-semibold",
-            "bg-white/10 backdrop-blur border border-neon-pink/50 text-white",
-            "hover:border-neon-pink hover:shadow-neon-pink hover:bg-white/15",
-            "transition-all duration-300 hover:animate-glitch"
-          )}
+          className="mt-10 sm:mt-12"
         >
-          <Plane className="w-5 h-5 text-neon-pink" />
-          VER CRONOGRAMA DE VUELOS
-        </motion.a>
+          <div className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-black/35 border border-white/20 backdrop-blur-md">
+            <span className="w-9 h-9 rounded-xl bg-miami-blue/15 border border-miami-blue/40 text-miami-blue inline-flex items-center justify-center">
+              <ShieldCheck className="w-4 h-4" />
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {QUICK_SECTION_LINKS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    aria-label={item.label}
+                    title={item.label}
+                    className={cn(
+                      "w-10 h-10 rounded-xl inline-flex items-center justify-center",
+                      "bg-white/10 border border-white/20 text-white/90",
+                      "hover:text-neon-pink hover:border-neon-pink/70 hover:bg-white/15",
+                      "transition-all duration-200"
+                    )}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
