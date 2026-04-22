@@ -33,7 +33,8 @@ function isCrewProfileAsset(resource: CloudinarySearchResult) {
   return (
     explicitProfileFlag ||
     message.includes("foto perfil") ||
-    message.includes("[perfil]")
+    message.includes("[perfil]") ||
+    message.includes("[casa]")
   );
 }
 

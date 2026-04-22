@@ -40,35 +40,41 @@ const ITINERARY_DAYS: ItineraryDay[] = [
         isFlight: true,
       },
       {
-        time: "15:00 - 16:00",
+        time: "14:30 - 15:30",
+        activity: "Traslado aeropuerto → casa",
+        description:
+          "Traslado estimado de 1 hora desde FLN al alojamiento para comenzar la logística local.",
+      },
+      {
+        time: "15:30 - 16:30",
         activity: "Check-in y bienvenida en Floripa",
         description:
           "Instalación en la casa, reparto de piezas y configuración base del fin de semana.",
       },
       {
-        time: "16:00 - 17:00",
+        time: "16:30 - 17:30",
         activity: "Actividad todo el día · Praia de Canasvieiras",
         description:
-          "Primera exploración cerca del alojamiento: mar tranquilo, playa amplia y buen punto para arrancar el tour de playas del norte.",
+          "Inicio del recorrido en playa base del sector norte, ideal para aterrizar el día sin traslados largos.",
       },
       {
-        time: "17:00 - 18:00",
-        activity: "Actividad todo el día · Jurerê Tradicional",
+        time: "17:30 - 18:30",
+        activity: "Actividad todo el día · Praia de Canasvieiras",
         description:
-          "Recorrido por Jurerê Tradicional para sunset temprano y reconocimiento de bares/restaurantes cercanos.",
+          "Segundo bloque continuo en la misma playa para cumplir jornada de 2 horas completas.",
       },
       {
-        time: "18:00 - 19:00",
-        activity: "Actividad todo el día · Praia de Daniela",
-        description:
-          "Parada en Daniela para cerrar el bloque playa con un entorno más relajado y perfecto para fotos del team.",
-      },
-      {
-        time: "19:00 - 20:00",
+        time: "18:30 - 20:30",
         activity: "ALMUERZO tardío de llegada",
         description:
-          "Comida de aterrizaje para recuperar energía tras vuelos y traslados.",
+          "Almuerzo extendido de 2 horas para recuperar energía tras vuelos y arranque del viaje.",
         isMeal: true,
+      },
+      {
+        time: "20:30 - 21:30",
+        activity: "Bloque libre / descanso",
+        description:
+          "Hora libre para duchas, descanso y preparación de salida nocturna.",
       },
       {
         time: "22:00 - 23:00",
@@ -92,46 +98,52 @@ const ITINERARY_DAYS: ItineraryDay[] = [
       },
       {
         time: "11:00 - 12:00",
-        activity: "Traslado / preparación del día",
+        activity: "Traslado hacia circuito de playas norte",
         description:
-          "Salida en bloque hacia el sector norte para evitar horas punta.",
+          "Salida del grupo hacia las playas conectadas del sector norte para recorrer sin repetir.",
       },
       {
         time: "12:00 - 13:00",
-        activity: "Actividad todo el día · Praia Brava",
+        activity: "Actividad todo el día · Praia da Lagoinha",
         description:
-          "Playa con más energía y olas, ideal para arrancar la jornada de exploración.",
+          "Primera playa del viernes, bahía calma para comenzar el bloque largo de recorrido.",
       },
       {
         time: "13:00 - 14:00",
         activity: "Actividad todo el día · Praia da Lagoinha",
         description:
-          "Tramo de agua más calma y entorno familiar para descansar y seguir el tour.",
+          "Segundo bloque seguido en Lagoinha para completar mínimo 2 horas por playa.",
       },
       {
-        time: "14:00 - 15:00",
+        time: "13:00 - 15:00",
         activity: "ALMUERZO",
         description:
-          "Parada oficial de almuerzo para reponer combustible y seguir la ruta.",
+          "Almuerzo extendido de 2 horas para recargar antes de continuar el circuito.",
         isMeal: true,
       },
       {
-        time: "15:00 - 16:00",
-        activity: "Actividad todo el día · Ponta das Canas",
+        time: "15:00 - 16:30",
+        activity: "Actividad Sorpresa 🔒🕵️🎭🎉",
         description:
-          "Spot cercano y cómodo para moverse en grupo grande sin largos traslados.",
+          "Bloque 1 de misión secreta. Sin pistas de ubicación: solo energía alta, pruebas sorpresa y fiesta.",
       },
       {
-        time: "16:00 - 17:00",
-        activity: "Actividad todo el día · Canasvieiras",
+        time: "16:30 - 18:00",
+        activity: "Actividad Sorpresa 🧩🎲🕶️🎊",
         description:
-          "Retorno a Canasvieiras para cerrar el bloque playa con servicios y accesos rápidos.",
+          "Bloque 2 de dinámica oculta con desafíos de equipo, misterio total y ambiente de celebración.",
       },
       {
-        time: "17:00 - 18:00",
-        activity: "Actividad todo el día · Jurerê",
+        time: "18:00 - 19:15",
+        activity: "Actividad Sorpresa 🎯🎭🪩🔥",
         description:
-          "Última parada del circuito en Jurerê para sunset y contenido oficial de la despedida.",
+          "Bloque 3 de la secuencia sorpresa: ritmo alto, cambios inesperados y momentos épicos del grupo.",
+      },
+      {
+        time: "19:15 - 20:30",
+        activity: "Actividad Sorpresa 🥷🔐🎉🍻",
+        description:
+          "Bloque 4 final del tramo secreto antes de las actividades nocturnas formales.",
       },
       {
         time: "20:30 - 21:00",
@@ -167,21 +179,27 @@ const ITINERARY_DAYS: ItineraryDay[] = [
       },
       {
         time: "11:00 - 12:00",
-        activity: "Actividad todo el día · Santo Antônio de Lisboa",
+        activity: "Traslado hacia circuito de playas sábado",
         description:
-          "Paseo corto por zona histórica para cambiar ritmo antes del bloque playa.",
+          "Movilización para continuar ruta sin repetir playas del viernes.",
       },
       {
         time: "12:00 - 13:00",
-        activity: "Actividad todo el día · Praia do Forte",
+        activity: "Actividad todo el día · Jurerê Tradicional",
         description:
-          "Playa cercana al norte con paisaje más tranquilo, perfecta para fotos y descanso.",
+          "Primera playa del sábado, inicio del bloque de dos horas continuas.",
       },
       {
-        time: "14:00 - 15:00",
+        time: "13:00 - 14:00",
+        activity: "Actividad todo el día · Jurerê Tradicional",
+        description:
+          "Segundo bloque en Jurerê Tradicional para cumplir jornada completa por playa.",
+      },
+      {
+        time: "14:00 - 16:00",
         activity: "ALMUERZO",
         description:
-          "Almuerzo principal del sábado con menú contundente para sostener la jornada.",
+          "Almuerzo principal del sábado en formato de 2 horas para recuperación de energía.",
         isMeal: true,
       },
       {
@@ -192,9 +210,9 @@ const ITINERARY_DAYS: ItineraryDay[] = [
       },
       {
         time: "18:00 - 19:00",
-        activity: "Actividad todo el día · Canajurê",
+        activity: "Actividad todo el día · Jurerê Internacional",
         description:
-          "Tramo final del tour entre Canasvieiras y Jurerê, ideal para cierre de tarde.",
+          "Segundo bloque seguido en Jurerê Internacional para completar 2 horas.",
       },
       {
         time: "20:00 - 21:00",
@@ -231,9 +249,9 @@ const ITINERARY_DAYS: ItineraryDay[] = [
       },
       {
         time: "11:00 - 12:00",
-        activity: "Actividad todo el día · Praia de Canasvieiras (despedida)",
+        activity: "Traslado casa → aeropuerto",
         description:
-          "Último paseo corto por playa cercana antes de ir al aeropuerto.",
+          "Bloque reservado para traslado estimado de 1 hora rumbo al aeropuerto.",
       },
       {
         time: "13:10 - 21:35",
