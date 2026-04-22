@@ -84,20 +84,27 @@ export default function Hero() {
               {QUICK_SECTION_LINKS.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <a
-                    key={item.href}
-                    href={item.href}
-                    aria-label={item.label}
-                    title={item.label}
-                    className={cn(
-                      "w-10 h-10 rounded-xl inline-flex items-center justify-center",
-                      "bg-white/10 border border-white/20 text-white/90",
-                      "hover:text-neon-pink hover:border-neon-pink/70 hover:bg-white/15",
-                      "transition-all duration-200"
-                    )}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </a>
+                  <div key={item.href} className="relative group/shortcut">
+                    <a
+                      href={item.href}
+                      aria-label={item.label}
+                      className={cn(
+                        "relative w-10 h-10 rounded-xl inline-flex items-center justify-center overflow-hidden",
+                        "bg-white/10 border border-white/20 text-white/90",
+                        "hover:-translate-y-0.5 hover:text-neon-pink hover:border-neon-pink/70 hover:bg-white/15",
+                        "hover:shadow-[0_0_20px_rgba(255,0,255,0.28)]",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-miami-blue/70",
+                        "transition-all duration-200"
+                      )}
+                    >
+                      <span className="pointer-events-none absolute inset-0 opacity-0 group-hover/shortcut:opacity-100 group-focus-within/shortcut:opacity-100 bg-gradient-to-br from-miami-blue/20 via-transparent to-neon-pink/20 transition-opacity duration-200" />
+                      <Icon className="relative w-4 h-4 transition-transform duration-200 group-hover/shortcut:scale-110" />
+                    </a>
+
+                    <span className="pointer-events-none absolute left-1/2 top-full z-30 mt-2 -translate-x-1/2 translate-y-1 whitespace-nowrap rounded-lg border border-neon-pink/45 bg-sky-950/92 px-3 py-1.5 text-[11px] sm:text-xs font-mono tracking-[0.04em] text-white shadow-[0_8px_24px_rgba(0,0,0,0.5)] opacity-0 group-hover/shortcut:opacity-100 group-focus-within/shortcut:opacity-100 group-hover/shortcut:translate-y-0 group-focus-within/shortcut:translate-y-0 transition-all duration-200">
+                      {item.label}
+                    </span>
+                  </div>
                 );
               })}
             </div>
