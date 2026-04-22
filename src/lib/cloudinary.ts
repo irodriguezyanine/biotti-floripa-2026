@@ -44,3 +44,43 @@ export function normalizeCloudinaryText(value: string) {
     .trim()
     .slice(0, 120);
 }
+
+type AnyRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is AnyRecord {
+  return typeof value === "object" && value !== null;
+}
+
+export function getCloudinaryErrorDetails(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message || error.name;
+  }
+
+  if (isRecord(error)) {
+    const directMessage =
+      typeof error.message === "string" ? error.message : undefined;
+    if (directMessage) return directMessage;
+
+    const nestedError = error.error;
+    if (isRecord(nestedError) && typeof nestedError.message === "string") {
+      return nestedError.message;
+    }
+
+    const httpCode =
+      typeof error.http_code === "number" ? String(error.http_code) : undefined;
+    const name = typeof error.name === "string" ? error.name : undefined;
+    const partial = [name, httpCode ? `http ${httpCode}` : undefined]
+      .filter(Boolean)
+      .join(" · ");
+    if (partial) return partial;
+
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return "Error no serializable";
+    }
+  }
+
+  if (typeof error === "string") return error;
+  return "Error desconocido";
+}

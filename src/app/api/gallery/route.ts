@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { getCloudinary, getGalleryFolder } from "@/lib/cloudinary";
+import {
+  getCloudinary,
+  getCloudinaryErrorDetails,
+  getGalleryFolder,
+} from "@/lib/cloudinary";
 
 export const runtime = "nodejs";
 
@@ -36,11 +40,7 @@ export async function GET() {
       });
       resources = (resourcesResult.resources ?? []) as CloudinarySearchResult[];
     } catch (apiError) {
-      diagnostics.push(
-        `api.resources: ${
-          apiError instanceof Error ? apiError.message : "error desconocido"
-        }`
-      );
+      diagnostics.push(`api.resources: ${getCloudinaryErrorDetails(apiError)}`);
     }
 
     // Fallback para cuentas/configuraciones donde api.resources puede fallar.
@@ -54,13 +54,7 @@ export async function GET() {
           .execute();
         resources = (searchResult.resources ?? []) as CloudinarySearchResult[];
       } catch (searchError) {
-        diagnostics.push(
-          `search: ${
-            searchError instanceof Error
-              ? searchError.message
-              : "error desconocido"
-          }`
-        );
+        diagnostics.push(`search: ${getCloudinaryErrorDetails(searchError)}`);
       }
     }
 
@@ -87,8 +81,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Error cargando galería:", error);
-    const details =
-      error instanceof Error ? error.message : "Error desconocido al listar";
+    const details = getCloudinaryErrorDetails(error);
     // Evitamos tirar 500 para no romper la UI y poder seguir subiendo fotos.
     return NextResponse.json({
       images: [],

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   getCloudinary,
+  getCloudinaryErrorDetails,
   getGalleryFolder,
   normalizeCloudinaryText,
 } from "@/lib/cloudinary";
@@ -136,8 +137,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ images });
   } catch (error) {
     console.error("Error en subida de galería:", error);
-    const details =
-      error instanceof Error ? error.message : "Error desconocido de subida";
+    const details = getCloudinaryErrorDetails(error);
     return NextResponse.json(
       {
         error: "No se pudo subir la imagen. Revisa la configuración de Cloudinary.",
