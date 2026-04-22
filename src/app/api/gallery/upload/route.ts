@@ -27,13 +27,12 @@ function uploadToCloudinary(
   const folder = getGalleryFolder();
   const safeMessage = normalizeCloudinaryText(opts.message);
   const safeUploader = normalizeCloudinaryText(opts.uploaderName);
-  const context: Record<string, string> = {
-    uploader: safeUploader,
-    uploaded_at: opts.uploadedAt,
-  };
-  if (safeMessage) {
-    context.message = safeMessage;
-  }
+  const contextParts = [
+    `uploader=${safeUploader}`,
+    `uploaded_at=${opts.uploadedAt}`,
+  ];
+  if (safeMessage) contextParts.push(`message=${safeMessage}`);
+  const context = contextParts.join("|");
 
   return new Promise<{
     public_id: string;
@@ -121,8 +120,13 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Error en subida de galería:", error);
+    const details =
+      error instanceof Error ? error.message : "Error desconocido de subida";
     return NextResponse.json(
-      { error: "No se pudo subir la imagen. Revisa la configuración de Cloudinary." },
+      {
+        error: "No se pudo subir la imagen. Revisa la configuración de Cloudinary.",
+        details,
+      },
       { status: 500 }
     );
   }

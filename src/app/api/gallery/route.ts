@@ -24,16 +24,15 @@ export async function GET() {
   try {
     const cloudinary = getCloudinary();
     const folder = getGalleryFolder();
+    const resourcesResult = await cloudinary.api.resources({
+      type: "upload",
+      prefix: `${folder}/`,
+      max_results: 100,
+      context: true,
+    });
 
-    const searchResult = await cloudinary.search
-      .expression(`folder="${folder}" AND resource_type:image`)
-      .sort_by("created_at", "desc")
-      .max_results(100)
-      .with_field("context")
-      .execute();
-
-    const images = ((searchResult.resources ?? []) as CloudinarySearchResult[]).map(
-      (resource) => ({
+    const images = ((resourcesResult.resources ?? []) as CloudinarySearchResult[])
+      .map((resource) => ({
         id: resource.public_id,
         url: resource.secure_url,
         width: resource.width,
@@ -43,14 +42,19 @@ export async function GET() {
         uploadedAt: toIsoDate(
           resource.context?.custom?.uploaded_at || resource.created_at
         ),
-      })
-    );
+      }))
+      .sort(
+        (a, b) =>
+          new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+      );
 
     return NextResponse.json({ images });
   } catch (error) {
     console.error("Error cargando galería:", error);
+    const details =
+      error instanceof Error ? error.message : "Error desconocido al listar";
     return NextResponse.json(
-      { error: "No se pudo cargar la galería." },
+      { error: "No se pudo cargar la galería.", details },
       { status: 500 }
     );
   }
