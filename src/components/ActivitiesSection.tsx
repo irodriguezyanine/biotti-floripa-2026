@@ -3,14 +3,15 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ChevronLeft,
+  CheckCircle2,
   ChevronRight,
   Clapperboard,
+  Circle,
   Crown,
+  XCircle,
   KeyRound,
   Lock,
   PartyPopper,
-  PlayCircle,
   ShieldCheck,
   Sparkles,
   Trophy,
@@ -33,7 +34,16 @@ type NoviaQuestion = {
   videoUrl: string;
 };
 
-type NoviaGameStage = "instructions" | "intro-video" | "questions";
+type NoviaGameStage =
+  | "instructions"
+  | "intro-video"
+  | "questions"
+  | "bonus-track"
+  | "bonus-question-video"
+  | "bonus-answer-video";
+
+type QuestionStep = "question" | "video" | "result";
+type ResultMark = "yes" | "so-so" | "no" | null;
 
 const ACTIVITIES: Activity[] = [
   {
@@ -142,10 +152,15 @@ export default function ActivitiesSection() {
   const [passwordError, setPasswordError] = useState("");
   const [unlocked, setUnlocked] = useState<Record<string, boolean>>({});
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
-  const [showVideo, setShowVideo] = useState(false);
+  const [questionStep, setQuestionStep] = useState<QuestionStep>("question");
+  const [questionResults, setQuestionResults] = useState<ResultMark[]>(
+    () => NOVIA_QUESTIONS.map(() => null)
+  );
   const [noviaStage, setNoviaStage] = useState<NoviaGameStage>("instructions");
 
   const INTRO_VIDEO_URL = "/videos/vale/Introduccion.mp4";
+  const BONUS_QUESTION_VIDEO_URL = "/videos/vale/bonus-pregunta-01.mp4";
+  const BONUS_ANSWER_VIDEO_URL = "/videos/vale/bonus-respuesta-01.mp4";
 
   const activeActivity = useMemo(
     () => ACTIVITIES.find((item) => item.id === activeActivityId) ?? null,
@@ -153,8 +168,13 @@ export default function ActivitiesSection() {
   );
 
   const currentQuestion = NOVIA_QUESTIONS[currentQuestionIdx];
-  const isFirstQuestion = currentQuestionIdx === 0;
   const isLastQuestion = currentQuestionIdx === NOVIA_QUESTIONS.length - 1;
+  const currentResult = questionResults[currentQuestionIdx];
+  const yesCount = questionResults.filter((item) => item === "yes").length;
+  const soSoCount = questionResults.filter((item) => item === "so-so").length;
+  const noCount = questionResults.filter((item) => item === "no").length;
+  const pendingCount = questionResults.filter((item) => item === null).length;
+  const totalScore = yesCount + soSoCount * 0.5;
 
   function closePasswordModal() {
     setPasswordModalFor(null);
@@ -165,7 +185,8 @@ export default function ActivitiesSection() {
   function closeActivityModal() {
     setActiveActivityId(null);
     setCurrentQuestionIdx(0);
-    setShowVideo(false);
+    setQuestionStep("question");
+    setQuestionResults(NOVIA_QUESTIONS.map(() => null));
     setNoviaStage("instructions");
   }
 
@@ -174,7 +195,8 @@ export default function ActivitiesSection() {
       setActiveActivityId(activityId);
       if (activityId === "preguntas-novia") {
         setCurrentQuestionIdx(0);
-        setShowVideo(false);
+        setQuestionStep("question");
+        setQuestionResults(NOVIA_QUESTIONS.map(() => null));
         setNoviaStage("instructions");
       }
       return;
@@ -193,7 +215,8 @@ export default function ActivitiesSection() {
       setActiveActivityId(activity.id);
       if (activity.id === "preguntas-novia") {
         setCurrentQuestionIdx(0);
-        setShowVideo(false);
+        setQuestionStep("question");
+        setQuestionResults(NOVIA_QUESTIONS.map(() => null));
         setNoviaStage("instructions");
       }
       closePasswordModal();
@@ -203,12 +226,22 @@ export default function ActivitiesSection() {
     setPasswordError("Clave incorrecta");
   }
 
-  function moveQuestion(direction: "next" | "prev") {
-    setShowVideo(false);
-    setCurrentQuestionIdx((prev) => {
-      if (direction === "next") return Math.min(prev + 1, NOVIA_QUESTIONS.length - 1);
-      return Math.max(prev - 1, 0);
+  function markCurrentResult(result: Exclude<ResultMark, null>) {
+    setQuestionResults((previous) => {
+      const next = [...previous];
+      next[currentQuestionIdx] = result;
+      return next;
     });
+  }
+
+  function onNextAfterResult() {
+    if (!currentResult) return;
+    if (isLastQuestion) {
+      setNoviaStage("bonus-track");
+      return;
+    }
+    setCurrentQuestionIdx((prev) => prev + 1);
+    setQuestionStep("question");
   }
 
   return (
@@ -379,7 +412,8 @@ export default function ActivitiesSection() {
                           <li>1) Lee la pregunta en voz alta.</li>
                           <li>2) Biotti responde.</li>
                           <li>3) Recién ahí muestra el video de Vale.</li>
-                          <li>4) Si falla, toma.</li>
+                          <li>4) Si el novio adivina, toman todos.</li>
+                          <li>5) Si el novio no adivina, toma 2.</li>
                         </ul>
                       </div>
                       <div className="mt-4 flex justify-end">
@@ -419,76 +453,270 @@ export default function ActivitiesSection() {
 
                   {noviaStage === "questions" && (
                     <div className="rounded-2xl border border-white/20 bg-black/25 p-4 sm:p-6">
+                      <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div className="rounded-xl border border-emerald-300/35 bg-emerald-500/10 p-2 text-center">
+                          <p className="text-[11px] font-mono uppercase tracking-wider text-emerald-200/85">
+                            Sí
+                          </p>
+                          <p className="text-xl font-display text-emerald-200">{yesCount}</p>
+                        </div>
+                        <div className="rounded-xl border border-amber-300/35 bg-amber-500/10 p-2 text-center">
+                          <p className="text-[11px] font-mono uppercase tracking-wider text-amber-200/85">
+                            Más o menos
+                          </p>
+                          <p className="text-xl font-display text-amber-200">{soSoCount}</p>
+                        </div>
+                        <div className="rounded-xl border border-rose-300/35 bg-rose-500/10 p-2 text-center">
+                          <p className="text-[11px] font-mono uppercase tracking-wider text-rose-200/85">
+                            No
+                          </p>
+                          <p className="text-xl font-display text-rose-200">{noCount}</p>
+                        </div>
+                        <div className="rounded-xl border border-white/25 bg-white/10 p-2 text-center">
+                          <p className="text-[11px] font-mono uppercase tracking-wider text-white/75">
+                            Pendientes
+                          </p>
+                          <p className="text-xl font-display text-white">{pendingCount}</p>
+                        </div>
+                      </div>
+
                       <div className="flex items-center justify-between gap-2 mb-4">
                         <span className="text-xs font-mono uppercase tracking-[0.18em] text-white/65">
                           Pregunta {currentQuestionIdx + 1} / {NOVIA_QUESTIONS.length}
                         </span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => moveQuestion("prev")}
-                            disabled={isFirstQuestion}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white/80 disabled:opacity-35 disabled:cursor-not-allowed hover:bg-white/20"
-                            aria-label="Pregunta anterior"
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveQuestion("next")}
-                            disabled={isLastQuestion}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white/80 disabled:opacity-35 disabled:cursor-not-allowed hover:bg-white/20"
-                            aria-label="Siguiente pregunta"
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </button>
-                        </div>
+                        <span className="text-[11px] font-mono uppercase tracking-[0.18em] text-miami-blue">
+                          Etapa:{" "}
+                          {questionStep === "question"
+                            ? "pregunta"
+                            : questionStep === "video"
+                              ? "video"
+                              : "resultado"}
+                        </span>
                       </div>
 
-                      <AnimatePresence mode="wait">
-                        <motion.div
-                          key={currentQuestion.question}
-                          initial={{ opacity: 0, y: 12 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -12 }}
-                          transition={{ duration: 0.24 }}
-                          className="rounded-2xl border border-fuchsia-300/30 bg-fuchsia-500/10 p-5 sm:p-7"
-                        >
-                          <p className="font-display text-2xl sm:text-3xl text-white leading-tight">
-                            {currentQuestion.question}
-                          </p>
-                        </motion.div>
-                      </AnimatePresence>
+                      {questionStep === "question" && (
+                        <>
+                          <AnimatePresence mode="wait">
+                            <motion.div
+                              key={currentQuestion.question}
+                              initial={{ opacity: 0, y: 12 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -12 }}
+                              transition={{ duration: 0.24 }}
+                              className="rounded-2xl border border-fuchsia-300/30 bg-fuchsia-500/10 p-5 sm:p-7"
+                            >
+                              <p className="font-display text-2xl sm:text-3xl text-white leading-tight">
+                                {currentQuestion.question}
+                              </p>
+                            </motion.div>
+                          </AnimatePresence>
+                          <div className="mt-4 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => setQuestionStep("video")}
+                              className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-miami-blue/15 px-4 py-2 text-miami-blue font-body hover:bg-miami-blue/25"
+                            >
+                              Siguiente
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </>
+                      )}
 
-                      <div className="mt-4">
+                      {questionStep === "video" && (
+                        <>
+                          <div className="rounded-2xl border border-white/20 bg-black/35 p-3">
+                            {currentQuestion.videoUrl ? (
+                              <video
+                                controls
+                                src={currentQuestion.videoUrl}
+                                className="w-full rounded-xl max-h-[420px] bg-black"
+                              />
+                            ) : (
+                              <div className="h-48 rounded-xl border border-dashed border-white/25 bg-white/5 flex flex-col items-center justify-center text-center px-4">
+                                <UserRound className="h-7 w-7 text-white/55 mb-2" />
+                                <p className="text-white/70 text-sm font-body">
+                                  Agrega el video de esta respuesta en el arreglo `NOVIA_QUESTIONS`.
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-4 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => setQuestionStep("result")}
+                              className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-miami-blue/15 px-4 py-2 text-miami-blue font-body hover:bg-miami-blue/25"
+                            >
+                              Siguiente
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </>
+                      )}
+
+                      {questionStep === "result" && (
+                        <>
+                          <div className="rounded-2xl border border-white/20 bg-black/35 p-5">
+                            <p className="font-display text-2xl text-white">
+                              ¿El novio respondió bien?
+                            </p>
+                            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <button
+                                type="button"
+                                onClick={() => markCurrentResult("yes")}
+                                className={cn(
+                                  "inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 font-body transition-colors",
+                                  currentResult === "yes"
+                                    ? "border-emerald-300/70 bg-emerald-500/25 text-emerald-100"
+                                    : "border-emerald-300/35 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20"
+                                )}
+                              >
+                                <CheckCircle2 className="h-4 w-4" />
+                                Sí
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => markCurrentResult("so-so")}
+                                className={cn(
+                                  "inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 font-body transition-colors",
+                                  currentResult === "so-so"
+                                    ? "border-amber-300/70 bg-amber-500/25 text-amber-100"
+                                    : "border-amber-300/35 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20"
+                                )}
+                              >
+                                <Circle className="h-4 w-4" />
+                                Más o menos
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => markCurrentResult("no")}
+                                className={cn(
+                                  "inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 font-body transition-colors",
+                                  currentResult === "no"
+                                    ? "border-rose-300/70 bg-rose-500/25 text-rose-100"
+                                    : "border-rose-300/35 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20"
+                                )}
+                              >
+                                <XCircle className="h-4 w-4" />
+                                No
+                              </button>
+                            </div>
+                          </div>
+                          <div className="mt-4 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={onNextAfterResult}
+                              disabled={!currentResult}
+                              className={cn(
+                                "inline-flex items-center gap-2 rounded-xl border px-4 py-2 font-body",
+                                currentResult
+                                  ? "border-miami-blue/55 bg-miami-blue/15 text-miami-blue hover:bg-miami-blue/25"
+                                  : "border-white/15 bg-white/10 text-white/40 cursor-not-allowed"
+                              )}
+                            >
+                              {isLastQuestion ? "Finalizar preguntas" : "Siguiente pregunta"}
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </>
+                      )}
+
+                      <div className="mt-5 grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-10 gap-2">
+                        {questionResults.map((item, idx) => (
+                          <div
+                            key={`result-${idx + 1}`}
+                            className="rounded-lg border border-white/20 bg-white/5 px-2 py-1.5 text-center"
+                          >
+                            <p className="text-[10px] font-mono text-white/60">{idx + 1}</p>
+                            <div className="mt-1 flex justify-center">
+                              {item === "yes" ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />
+                              ) : item === "so-so" ? (
+                                <Circle className="h-3.5 w-3.5 text-amber-300" />
+                              ) : item === "no" ? (
+                                <XCircle className="h-3.5 w-3.5 text-rose-300" />
+                              ) : (
+                                <Circle className="h-3.5 w-3.5 text-white/45" />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {noviaStage === "bonus-track" && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="rounded-2xl border border-amber-300/45 bg-amber-500/10 p-6 sm:p-8 text-center"
+                    >
+                      <motion.p
+                        animate={{ scale: [1, 1.06, 1] }}
+                        transition={{ duration: 1.2, repeat: Infinity }}
+                        className="font-display text-4xl sm:text-5xl text-amber-200"
+                      >
+                        BONUS TRACK
+                      </motion.p>
+                      <p className="mt-3 text-white/75 font-body">
+                        Preguntas de la novia para el novio.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setNoviaStage("bonus-question-video")}
+                        className="mt-5 inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-miami-blue/15 px-4 py-2 text-miami-blue font-body hover:bg-miami-blue/25"
+                      >
+                        Siguiente
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </motion.div>
+                  )}
+
+                  {noviaStage === "bonus-question-video" && (
+                    <div className="rounded-2xl border border-white/20 bg-black/25 p-4 sm:p-6">
+                      <div className="rounded-2xl border border-fuchsia-300/30 bg-black/40 p-3">
+                        <video
+                          controls
+                          src={BONUS_QUESTION_VIDEO_URL}
+                          className="w-full rounded-xl max-h-[460px] bg-black"
+                        />
+                      </div>
+                      <div className="mt-4 flex justify-end">
                         <button
                           type="button"
-                          onClick={() => setShowVideo((prev) => !prev)}
-                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/50 bg-miami-blue/15 px-4 py-2 text-miami-blue font-body hover:bg-miami-blue/25"
+                          onClick={() => setNoviaStage("bonus-answer-video")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-miami-blue/15 px-4 py-2 text-miami-blue font-body hover:bg-miami-blue/25"
                         >
-                          <PlayCircle className="h-4 w-4" />
-                          {showVideo ? "Ocultar video" : "Mostrar video respuesta"}
+                          Siguiente
+                          <ChevronRight className="h-4 w-4" />
                         </button>
                       </div>
+                    </div>
+                  )}
 
-                      {showVideo && (
-                        <div className="mt-4 rounded-2xl border border-white/20 bg-black/35 p-3">
-                          {currentQuestion.videoUrl ? (
-                            <video
-                              controls
-                              src={currentQuestion.videoUrl}
-                              className="w-full rounded-xl max-h-[420px] bg-black"
-                            />
-                          ) : (
-                            <div className="h-48 rounded-xl border border-dashed border-white/25 bg-white/5 flex flex-col items-center justify-center text-center px-4">
-                              <UserRound className="h-7 w-7 text-white/55 mb-2" />
-                              <p className="text-white/70 text-sm font-body">
-                                Agrega el video de esta respuesta en el arreglo `NOVIA_QUESTIONS`.
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                  {noviaStage === "bonus-answer-video" && (
+                    <div className="rounded-2xl border border-white/20 bg-black/25 p-4 sm:p-6">
+                      <div className="rounded-2xl border border-emerald-300/30 bg-black/40 p-3">
+                        <video
+                          controls
+                          src={BONUS_ANSWER_VIDEO_URL}
+                          className="w-full rounded-xl max-h-[460px] bg-black"
+                        />
+                      </div>
+                      <div className="mt-4 rounded-xl border border-white/20 bg-white/5 px-4 py-3">
+                        <p className="text-white/80 font-body text-sm">
+                          Resultado final:{" "}
+                          <span className="text-emerald-300 font-semibold">{yesCount} sí</span>
+                          {" · "}
+                          <span className="text-amber-300 font-semibold">{soSoCount} más o menos</span>
+                          {" · "}
+                          <span className="text-rose-300 font-semibold">{noCount} no</span>
+                          {" · "}
+                          <span className="text-miami-blue font-semibold">
+                            Puntaje: {totalScore.toFixed(1)} / {NOVIA_QUESTIONS.length}
+                          </span>
+                        </p>
+                      </div>
                     </div>
                   )}
 
