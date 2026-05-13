@@ -83,46 +83,55 @@ const NOVIA_QUESTIONS: NoviaQuestion[] = [
     question: "3. ¿Lo que menos te gusta de Sebastián?",
     videoUrl: "/videos/vale/pregunta-03-lo-que-menos-te-gusta.mp4",
   },
-  { question: "4. ¿Cuál es tu trago favorito?", videoUrl: "" },
-  { question: "5. ¿Cuánto tiempo llevan juntos (exacto)?", videoUrl: "" },
-  { question: "6. ¿Cuántos hijos quieren tener?", videoUrl: "" },
-  { question: "7. ¿Qué hombre(s) le causan celos a Sebastián?", videoUrl: "" },
-  { question: "8. ¿Dónde fue su primera vez 👉👌?", videoUrl: "" },
-  { question: "9. ¿Posición preferida tuya?", videoUrl: "" },
-  { question: "10. ¿Qué parte del cuerpo de Sebastián te gusta más?", videoUrl: "" },
+  {
+    question: "4. ¿Cuál es tu trago favorito?",
+    videoUrl: "/videos/vale/pregunta-04-trago-favorito.mp4",
+  },
+  {
+    question: "5. ¿Cuánto tiempo llevan juntos (exacto)?",
+    videoUrl: "/videos/vale/pregunta-05-tiempo-juntos.mp4",
+  },
+  {
+    question: "6. ¿Cuántos hijos quieren tener?",
+    videoUrl: "/videos/vale/pregunta-06-hijos.mp4",
+  },
+  {
+    question: "7. ¿Qué hombre(s) le causan celos a Sebastián?",
+    videoUrl: "/videos/vale/pregunta-07-celos.mp4",
+  },
+  {
+    question: "8. ¿Dónde fue su primera vez 👉👌?",
+    videoUrl: "/videos/vale/pregunta-08-primera-vez.mp4",
+  },
+  {
+    question: "9. ¿Posición preferida tuya?",
+    videoUrl: "/videos/vale/pregunta-09-posicion-preferida.mp4",
+  },
+  {
+    question: "10. ¿Qué parte del cuerpo de Sebastián te gusta más?",
+    videoUrl: "/videos/vale/pregunta-10-parte-del-cuerpo.mp4",
+  },
   {
     question:
       "11. En promedio ¿cuántas veces hacen el amor a la semana (número exacto)?",
-    videoUrl: "",
+    videoUrl: "/videos/vale/pregunta-11-cuantas-veces.mp4",
   },
-  { question: "12. Si no es en la cama, ¿dónde hacen el amor?", videoUrl: "" },
+  {
+    question: "12. Si no es en la cama, ¿dónde hacen el amor?",
+    videoUrl: "/videos/vale/pregunta-12-no-cama.mp4",
+  },
   {
     question: "13. ¿Qué cosas no dejas que Sebastián haga en la cama?",
-    videoUrl: "",
+    videoUrl: "/videos/vale/pregunta-13-no-deja-en-cama.mp4",
   },
   {
     question:
       "14. Posición favorita de Sebastián (imitándolo), tendrá que actuarlo.",
-    videoUrl: "",
+    videoUrl: "/videos/vale/pregunta-14-posicion-favorita-seba.mp4",
   },
   {
     question: "15. Disfraz favorito de Sebastián para el sexo. O vestimenta.",
-    videoUrl: "",
-  },
-];
-
-const BIOTTI_FINAL_ROUND = [
-  {
-    question: "¿Cuál es el trago favorito de Vale?",
-    answer: "Respuesta: Gin tonic.",
-  },
-  {
-    question: "¿Cuántos hijos quieren tener?",
-    answer: "Respuesta: 2 hijos.",
-  },
-  {
-    question: "¿Dónde fue el primer beso?",
-    answer: "Respuesta: (Completar por el equipo).",
+    videoUrl: "/videos/vale/pregunta-15-disfraz-favorito.mp4",
   },
 ];
 
@@ -483,24 +492,6 @@ export default function ActivitiesSection() {
                     </div>
                   )}
 
-                  {noviaStage === "questions" && (
-                    <div className="mt-6 rounded-2xl border border-amber-300/30 bg-amber-500/10 p-4 sm:p-5">
-                      <h4 className="font-display text-2xl text-white mb-3">
-                        Último Round: 3 preguntas a Biotti
-                      </h4>
-                      <div className="space-y-3">
-                        {BIOTTI_FINAL_ROUND.map((item) => (
-                          <div
-                            key={item.question}
-                            className="rounded-xl border border-white/20 bg-black/20 p-3"
-                          >
-                            <p className="text-white font-body">{item.question}</p>
-                            <p className="text-amber-200 text-sm font-body mt-1">{item.answer}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </>
               )}
             </motion.div>
