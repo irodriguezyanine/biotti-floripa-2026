@@ -56,15 +56,6 @@ const CREW: CrewMember[] = [
       "https://res.cloudinary.com/dindgpi3d/image/upload/v1776829175/biotti-floripa-2026/gallery/ke5bcczq30sawrom2kw6.png",
   },
   {
-    name: "Joaco Honorato",
-    fullName: "Joaquín Honorato",
-    nickname: "Joaco, honorato",
-    age: 31,
-    bio: "Encargado de buena vibra y scouting de spots para el grupo.",
-    photoUrl:
-      "https://res.cloudinary.com/dindgpi3d/image/upload/v1776829603/biotti-floripa-2026/gallery/iggpty2qky1cidycrrwf.png",
-  },
-  {
     name: "Javier Vargas",
     fullName: "Javier Vargas",
     nickname: "Vargas",

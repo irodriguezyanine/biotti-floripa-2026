@@ -1,11 +1,14 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Camera,
   ChevronLeft,
   ChevronRight,
+  FileImage,
+  Files,
+  HardDrive,
   ImagePlus,
   Loader2,
   MessageSquare,
@@ -78,6 +81,7 @@ export default function GallerySection() {
   const [message, setMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const [isUploaderOpen, setIsUploaderOpen] = useState(false);
   const [ownershipMap, setOwnershipMap] = useState<Record<string, string>>({});
   const carouselRef = useRef<HTMLDivElement>(null);
 
@@ -85,16 +89,10 @@ export default function GallerySection() {
     return !uploading && selectedFiles.length > 0 && uploaderName.trim().length > 0;
   }, [selectedFiles, uploaderName, uploading]);
 
-  const selectedCountLabel = useMemo(() => {
-    if (selectedFiles.length === 0) return "Ninguna imagen seleccionada";
-    if (selectedFiles.length === 1) return "1 imagen seleccionada";
-    return `${selectedFiles.length} imágenes seleccionadas`;
-  }, [selectedFiles]);
-
-  const selectedSizeLabel = useMemo(() => {
+  const selectedCount = selectedFiles.length;
+  const selectedSizeMb = useMemo(() => {
     const totalBytes = selectedFiles.reduce((acc, file) => acc + file.size, 0);
-    const totalMb = totalBytes / (1024 * 1024);
-    return `${totalMb.toFixed(1)} MB en total`;
+    return totalBytes / (1024 * 1024);
   }, [selectedFiles]);
 
   const imagesWithOwnership = useMemo(
@@ -245,6 +243,7 @@ export default function GallerySection() {
       }
 
       clearSelectedFiles();
+      setIsUploaderOpen(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error desconocido";
       setError(message);
@@ -309,170 +308,196 @@ export default function GallerySection() {
         >
           GALERÍA <span className="text-miami-blue">COLABORATIVA</span>
         </motion.h2>
-        <motion.p
+        <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="text-center text-white/70 font-body text-sm sm:text-base mb-10"
+          className="mb-10 flex justify-center"
         >
-          Sube varias fotos a la vez con tu nombre y mensaje opcional.
-        </motion.p>
+          <button
+            type="button"
+            onClick={() => setIsUploaderOpen(true)}
+            className="group relative inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-miami-blue/60 bg-miami-blue/15 text-miami-blue shadow-[0_0_24px_rgba(0,255,255,0.25)] transition-all hover:scale-105 hover:bg-miami-blue/25"
+            aria-label="Abrir modal para subir fotos"
+            title="Subir fotos"
+          >
+            <Camera className="h-7 w-7 transition-transform group-hover:scale-110" />
+          </button>
+        </motion.div>
 
-        <motion.form
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          onSubmit={onSubmit}
-          className="glass-card rounded-3xl border border-white/20 p-5 sm:p-7 mb-10"
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            <div className="lg:col-span-7">
-              <p className="font-body text-xs uppercase tracking-[0.18em] text-white/65 mb-2">
-                Fotos
-              </p>
-              <label
-                htmlFor="gallery-file-input"
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setIsDragging(true);
-                }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  setIsDragging(false);
-                  onSelectFiles(event.dataTransfer.files);
-                }}
-                className={cn(
-                  "block rounded-2xl border border-dashed p-6 transition-colors cursor-pointer",
-                  isDragging
-                    ? "border-miami-blue/80 bg-miami-blue/15"
-                    : "border-white/25 bg-white/5 hover:bg-white/10"
-                )}
+        <AnimatePresence>
+          {isUploaderOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-md px-4 py-6"
+              onClick={() => setIsUploaderOpen(false)}
+            >
+              <motion.form
+                initial={{ opacity: 0, scale: 0.94, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97, y: 8 }}
+                transition={{ type: "spring", damping: 24, stiffness: 260 }}
+                onSubmit={onSubmit}
+                onClick={(event) => event.stopPropagation()}
+                className="relative w-full max-w-3xl glass-card rounded-3xl border border-white/25 p-5 sm:p-7"
               >
-                <input
-                  id="gallery-file-input"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  required
-                  onChange={(event) => onSelectFiles(event.target.files)}
-                  className="hidden"
-                />
-                <div className="flex items-start gap-4">
-                  <div className="w-11 h-11 rounded-xl bg-miami-blue/15 border border-miami-blue/50 flex items-center justify-center shrink-0">
-                    <ImagePlus className="w-5 h-5 text-miami-blue" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-body font-semibold text-white">
-                      Arrastra imágenes aquí o haz clic para seleccionarlas
-                    </p>
-                    <p className="font-body text-sm text-white/60 mt-1">
-                      JPG, PNG, WEBP · hasta 10 archivos · 10MB por imagen
-                    </p>
-                    <p className="font-mono text-xs text-miami-blue mt-2">
-                      {selectedCountLabel} · {selectedSizeLabel}
-                    </p>
-                  </div>
-                </div>
-              </label>
-              {selectedFiles.length > 0 && (
-                <div className="mt-3 space-y-3">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                    {selectedPreviews.map((preview, index) => (
-                      <div
-                        key={preview.key}
-                        className="relative rounded-xl overflow-hidden border border-white/20 bg-black/20"
-                      >
-                        <img
-                          src={preview.url}
-                          alt={`Preview ${preview.name}`}
-                          className="h-24 w-full object-cover"
-                        />
+                <button
+                  type="button"
+                  onClick={() => setIsUploaderOpen(false)}
+                  className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/35 text-white/90 transition-colors hover:bg-black/55"
+                  aria-label="Cerrar modal de subida"
+                  title="Cerrar"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                  <div className="lg:col-span-7">
+                    <label
+                      htmlFor="gallery-file-input"
+                      onDragOver={(event) => {
+                        event.preventDefault();
+                        setIsDragging(true);
+                      }}
+                      onDragLeave={() => setIsDragging(false)}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        setIsDragging(false);
+                        onSelectFiles(event.dataTransfer.files);
+                      }}
+                      className={cn(
+                        "block rounded-2xl border border-dashed p-6 transition-colors cursor-pointer",
+                        isDragging
+                          ? "border-miami-blue/80 bg-miami-blue/15"
+                          : "border-white/25 bg-white/5 hover:bg-white/10"
+                      )}
+                    >
+                      <input
+                        id="gallery-file-input"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        required
+                        onChange={(event) => onSelectFiles(event.target.files)}
+                        className="hidden"
+                      />
+
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-miami-blue/15 border border-miami-blue/50 flex items-center justify-center">
+                          <ImagePlus className="w-7 h-7 text-miami-blue" />
+                        </div>
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-mono text-white/85">
+                            <FileImage className="w-3.5 h-3.5 text-miami-blue" />
+                            IMG
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-mono text-white/85">
+                            <Files className="w-3.5 h-3.5 text-miami-blue" />
+                            {selectedCount}/10
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-mono text-white/85">
+                            <HardDrive className="w-3.5 h-3.5 text-miami-blue" />
+                            {selectedSizeMb.toFixed(1)}MB
+                          </span>
+                        </div>
+                      </div>
+                    </label>
+
+                    {selectedFiles.length > 0 && (
+                      <div className="mt-3 space-y-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                          {selectedPreviews.map((preview, index) => (
+                            <div
+                              key={preview.key}
+                              className="relative rounded-xl overflow-hidden border border-white/20 bg-black/20"
+                            >
+                              <img
+                                src={preview.url}
+                                alt={`Preview ${preview.name}`}
+                                className="h-24 w-full object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const target = selectedFiles[index];
+                                  if (target) removeSelectedFile(target);
+                                }}
+                                className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 border border-white/20 text-white/90 flex items-center justify-center hover:bg-black"
+                                aria-label={`Quitar ${preview.name}`}
+                                title={`Quitar ${preview.name}`}
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                         <button
                           type="button"
-                          onClick={() => {
-                            const target = selectedFiles[index];
-                            if (target) removeSelectedFile(target);
-                          }}
-                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 border border-white/20 text-white/90 flex items-center justify-center hover:bg-black"
-                          aria-label={`Quitar ${preview.name}`}
+                          onClick={clearSelectedFiles}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white/75 transition-colors hover:bg-white/20 hover:text-white"
+                          aria-label="Limpiar selección"
+                          title="Limpiar selección"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
-                    ))}
+                    )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={clearSelectedFiles}
-                    className="text-xs text-white/60 hover:text-white/85 transition-colors font-body"
-                  >
-                    Limpiar selección
-                  </button>
+
+                  <div className="lg:col-span-5 space-y-4">
+                    <label className="relative block">
+                      <User className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-miami-blue/85" />
+                      <input
+                        type="text"
+                        value={uploaderName}
+                        required
+                        maxLength={60}
+                        onChange={(event) => setUploaderName(event.target.value)}
+                        placeholder="Nombre"
+                        className="w-full rounded-xl border border-white/20 bg-white/5 pl-10 pr-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-miami-blue/60"
+                      />
+                    </label>
+
+                    <label className="relative block">
+                      <MessageSquare className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-neon-pink/85" />
+                      <textarea
+                        value={message}
+                        maxLength={140}
+                        onChange={(event) => setMessage(event.target.value)}
+                        placeholder="Mensaje"
+                        rows={4}
+                        className="w-full rounded-xl border border-white/20 bg-white/5 pl-10 pr-4 py-3 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-miami-blue/60 resize-none"
+                      />
+                    </label>
+
+                    <div className="flex justify-end">
+                      <button
+                        type="submit"
+                        disabled={!canSubmit}
+                        className={cn(
+                          "inline-flex h-12 w-12 items-center justify-center rounded-full transition-colors",
+                          canSubmit
+                            ? "bg-miami-blue/25 border border-miami-blue/60 text-miami-blue hover:bg-miami-blue/35"
+                            : "bg-white/5 border border-white/10 text-white/40 cursor-not-allowed"
+                        )}
+                        aria-label={uploading ? "Subiendo fotos" : "Subir fotos"}
+                        title={uploading ? "Subiendo fotos" : "Subir fotos"}
+                      >
+                        {uploading ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <Upload className="w-5 h-5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
-
-            <div className="lg:col-span-5 space-y-4">
-              <label className="block">
-                <span className="font-body text-xs uppercase tracking-[0.18em] text-white/65">
-                  Nombre
-                </span>
-                <input
-                  type="text"
-                  value={uploaderName}
-                  required
-                  maxLength={60}
-                  onChange={(event) => setUploaderName(event.target.value)}
-                  placeholder="Ej: Nacho"
-                  className="mt-2 w-full rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-white placeholder:text-white/35 focus:outline-none focus:ring-2 focus:ring-miami-blue/60"
-                />
-              </label>
-
-              <label className="block">
-                <span className="font-body text-xs uppercase tracking-[0.18em] text-white/65">
-                  Mensaje (opcional)
-                </span>
-                <textarea
-                  value={message}
-                  maxLength={140}
-                  onChange={(event) => setMessage(event.target.value)}
-                  placeholder="Ej: Primera noche en Floripa"
-                  rows={4}
-                  className="mt-2 w-full rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-white placeholder:text-white/35 focus:outline-none focus:ring-2 focus:ring-miami-blue/60 resize-none"
-                />
-              </label>
-            </div>
-          </div>
-
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <button
-              type="submit"
-              disabled={!canSubmit}
-              className={cn(
-                "inline-flex items-center gap-2 px-5 py-3 rounded-xl font-body text-sm transition-colors",
-                canSubmit
-                  ? "bg-miami-blue/25 border border-miami-blue/60 text-miami-blue hover:bg-miami-blue/35"
-                  : "bg-white/5 border border-white/10 text-white/40 cursor-not-allowed"
-              )}
-            >
-              {uploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Subiendo...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4" />
-                  Subir fotos
-                </>
-              )}
-            </button>
-            <p className="text-white/55 text-xs font-body">
-              Máximo 10 fotos por envío.
-            </p>
-          </div>
-        </motion.form>
+              </motion.form>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {error && (
           <div className="mb-6 rounded-lg border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-rose-200 text-sm font-body">
