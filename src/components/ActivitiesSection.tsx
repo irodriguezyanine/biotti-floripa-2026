@@ -49,8 +49,10 @@ type CiertoBiottiItem = {
   title: string;
   story: string;
   verdict: string;
+  isTrue: boolean;
 };
-type MandiolaRoundResult = "correct" | "wrong" | null;
+type MandiolaVote = "true" | "false" | null;
+type MandiolaPhase = "vote" | "result";
 
 const ACTIVITIES: Activity[] = [
   {
@@ -101,31 +103,48 @@ const CIERTO_BIOTTI_ITEMS: CiertoBiottiItem[] = [
     story:
       'En el San Ignacio El Bosque, a Sebastián lo pillaron en los baños vendiendo respuestas de pruebas de matemáticas. Decía que ese baño era "la oficina de Sebastián Biotti".',
     verdict: "BIOTTI-MENTIRA (Nunca pasó).",
+    isTrue: false,
   },
   {
     title: "2. El Impulso Vandálico",
     story:
       "En la universidad, volviendo de un carrete, a Biotti le dio por robarse un basurero de la vía pública a pulso y llevárselo a casa. Se sacó la csm caminando con el basurero, pero llegó a la casa con el basurero municipal.",
     verdict: "CIERTA (Es real).",
+    isTrue: true,
   },
   {
     title: "3. El Accidente Misterioso",
     story:
       "Durante un carrete, se cayó de un árbol por estar borracho y bajo los efectos de sustancias. Para tapar la vergüenza, le inventó a sus amigos que fue un accidente casual.",
     verdict: "CIERTA (Es real).",
+    isTrue: true,
   },
   {
     title: "4. El Secreto Universitario",
     story:
       'Sebastián, alias "El Lula", recuerda a María José como la mejor polola de toda su época universitaria.',
     verdict: "CIERTA (Es real).",
+    isTrue: true,
   },
   {
     title: "5. Desgracia Romántica",
     story:
       '"El Lula" entró a la casa de una mina que se quería comer. En plena cita tuvo que ir al baño a hacer "a cagar", la maniobra falló y la mina lo pilló.',
     verdict: "BIOTTI-MENTIRA (Esta es la trampa).",
+    isTrue: false,
   },
+];
+
+const MANDIOLA_PLAYERS = [
+  "Biotti",
+  "Nacho",
+  "Manuel",
+  "Momo",
+  "Javier",
+  "Mandiola",
+  "Pedro",
+  "Seba",
+  "Felipe",
 ];
 
 const NOVIA_QUESTIONS: NoviaQuestion[] = [
@@ -204,14 +223,16 @@ export default function ActivitiesSection() {
   const [questionResults, setQuestionResults] = useState<ResultMark[]>(
     () => NOVIA_QUESTIONS.map(() => null)
   );
-  const [showMandiolaVerdict, setShowMandiolaVerdict] = useState<boolean[]>(
+  const [mandiolaQuestionIdx, setMandiolaQuestionIdx] = useState(0);
+  const [mandiolaPhase, setMandiolaPhase] = useState<MandiolaPhase>("vote");
+  const [mandiolaVotes, setMandiolaVotes] = useState<MandiolaVote[][]>(
+    () => CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => null))
+  );
+  const [mandiolaResolvedRounds, setMandiolaResolvedRounds] = useState<boolean[]>(
     () => CIERTO_BIOTTI_ITEMS.map(() => false)
   );
-  const [mandiolaResults, setMandiolaResults] = useState<MandiolaRoundResult[]>(
-    () => CIERTO_BIOTTI_ITEMS.map(() => null)
-  );
-  const [mandiolaGiftedByRound, setMandiolaGiftedByRound] = useState<boolean[]>(
-    () => CIERTO_BIOTTI_ITEMS.map(() => false)
+  const [mandiolaGiftedByPlayer, setMandiolaGiftedByPlayer] = useState<boolean[][]>(
+    () => CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => false))
   );
   const [noviaStage, setNoviaStage] = useState<NoviaGameStage>("cover");
 
@@ -231,10 +252,43 @@ export default function ActivitiesSection() {
   const soSoCount = questionResults.filter((item) => item === "so-so").length;
   const noCount = questionResults.filter((item) => item === "no").length;
   const totalScore = yesCount + soSoCount * 0.5;
-  const mandiolaCorrectCount = mandiolaResults.filter((item) => item === "correct").length;
-  const mandiolaWrongCount = mandiolaResults.filter((item) => item === "wrong").length;
-  const mandiolaGiftedCount = mandiolaGiftedByRound.filter(Boolean).length;
-  const mandiolaAvailableGiftShots = Math.max(0, mandiolaWrongCount - mandiolaGiftedCount);
+  const currentMandiolaItem = CIERTO_BIOTTI_ITEMS[mandiolaQuestionIdx];
+  const currentMandiolaVotes = mandiolaVotes[mandiolaQuestionIdx] ?? [];
+  const allMandiolaVotesDone = currentMandiolaVotes.every((vote) => vote !== null);
+  const isFirstMandiolaQuestion = mandiolaQuestionIdx === 0;
+  const isLastMandiolaQuestion = mandiolaQuestionIdx === CIERTO_BIOTTI_ITEMS.length - 1;
+  const currentMandiolaWinners = MANDIOLA_PLAYERS.filter((_, playerIdx) => {
+    const vote = currentMandiolaVotes[playerIdx];
+    if (!vote) return false;
+    return currentMandiolaItem.isTrue ? vote === "true" : vote === "false";
+  });
+  const currentMandiolaLosers = MANDIOLA_PLAYERS.filter((_, playerIdx) => {
+    const vote = currentMandiolaVotes[playerIdx];
+    if (!vote) return false;
+    return currentMandiolaItem.isTrue ? vote === "false" : vote === "true";
+  });
+
+  const mandiolaCorrectCount = CIERTO_BIOTTI_ITEMS.reduce((acc, item, roundIdx) => {
+    if (!mandiolaResolvedRounds[roundIdx]) return acc;
+    const votes = mandiolaVotes[roundIdx] ?? [];
+    const winnersInRound = votes.filter((vote) =>
+      item.isTrue ? vote === "true" : vote === "false"
+    ).length;
+    return acc + winnersInRound;
+  }, 0);
+  const mandiolaWrongCount = CIERTO_BIOTTI_ITEMS.reduce((acc, item, roundIdx) => {
+    if (!mandiolaResolvedRounds[roundIdx]) return acc;
+    const votes = mandiolaVotes[roundIdx] ?? [];
+    const losersInRound = votes.filter((vote) =>
+      item.isTrue ? vote === "false" : vote === "true"
+    ).length;
+    return acc + losersInRound;
+  }, 0);
+  const mandiolaGiftedCount = mandiolaGiftedByPlayer.reduce(
+    (acc, byRound) => acc + byRound.filter(Boolean).length,
+    0
+  );
+  const mandiolaAvailableGiftShots = Math.max(0, mandiolaCorrectCount - mandiolaGiftedCount);
 
   function closePasswordModal() {
     setPasswordModalFor(null);
@@ -247,9 +301,11 @@ export default function ActivitiesSection() {
     setCurrentQuestionIdx(0);
     setQuestionStep("question");
     setQuestionResults(NOVIA_QUESTIONS.map(() => null));
-    setShowMandiolaVerdict(CIERTO_BIOTTI_ITEMS.map(() => false));
-    setMandiolaResults(CIERTO_BIOTTI_ITEMS.map(() => null));
-    setMandiolaGiftedByRound(CIERTO_BIOTTI_ITEMS.map(() => false));
+    setMandiolaQuestionIdx(0);
+    setMandiolaPhase("vote");
+    setMandiolaVotes(CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => null)));
+    setMandiolaResolvedRounds(CIERTO_BIOTTI_ITEMS.map(() => false));
+    setMandiolaGiftedByPlayer(CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => false)));
     setNoviaStage("cover");
   }
 
@@ -263,9 +319,13 @@ export default function ActivitiesSection() {
         setNoviaStage("cover");
       }
       if (activityId === "actividad-mandiola") {
-        setShowMandiolaVerdict(CIERTO_BIOTTI_ITEMS.map(() => false));
-        setMandiolaResults(CIERTO_BIOTTI_ITEMS.map(() => null));
-        setMandiolaGiftedByRound(CIERTO_BIOTTI_ITEMS.map(() => false));
+        setMandiolaQuestionIdx(0);
+        setMandiolaPhase("vote");
+        setMandiolaVotes(CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => null)));
+        setMandiolaResolvedRounds(CIERTO_BIOTTI_ITEMS.map(() => false));
+        setMandiolaGiftedByPlayer(
+          CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => false))
+        );
       }
       return;
     }
@@ -288,9 +348,13 @@ export default function ActivitiesSection() {
         setNoviaStage("cover");
       }
       if (activity.id === "actividad-mandiola") {
-        setShowMandiolaVerdict(CIERTO_BIOTTI_ITEMS.map(() => false));
-        setMandiolaResults(CIERTO_BIOTTI_ITEMS.map(() => null));
-        setMandiolaGiftedByRound(CIERTO_BIOTTI_ITEMS.map(() => false));
+        setMandiolaQuestionIdx(0);
+        setMandiolaPhase("vote");
+        setMandiolaVotes(CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => null)));
+        setMandiolaResolvedRounds(CIERTO_BIOTTI_ITEMS.map(() => false));
+        setMandiolaGiftedByPlayer(
+          CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => false))
+        );
       }
       closePasswordModal();
       return;
@@ -315,6 +379,59 @@ export default function ActivitiesSection() {
     }
     setCurrentQuestionIdx((prev) => prev + 1);
     setQuestionStep("question");
+  }
+
+  function markMandiolaVote(playerIdx: number, vote: Exclude<MandiolaVote, null>) {
+    setMandiolaVotes((previous) => {
+      const next = previous.map((roundVotes) => [...roundVotes]);
+      next[mandiolaQuestionIdx][playerIdx] = vote;
+      return next;
+    });
+  }
+
+  function onShowMandiolaVerdict() {
+    if (!allMandiolaVotesDone) return;
+    setMandiolaResolvedRounds((previous) => {
+      const next = [...previous];
+      next[mandiolaQuestionIdx] = true;
+      return next;
+    });
+    setMandiolaPhase("result");
+  }
+
+  function onPreviousMandiolaStage() {
+    if (mandiolaPhase === "result") {
+      setMandiolaPhase("vote");
+      return;
+    }
+    if (isFirstMandiolaQuestion) return;
+    setMandiolaQuestionIdx((prev) => prev - 1);
+    setMandiolaPhase("result");
+  }
+
+  function onNextMandiolaStage() {
+    if (mandiolaPhase === "vote") {
+      onShowMandiolaVerdict();
+      return;
+    }
+    if (isLastMandiolaQuestion) return;
+    setMandiolaQuestionIdx((prev) => prev + 1);
+    setMandiolaPhase("vote");
+  }
+
+  function toggleMandiolaGift(playerIdx: number) {
+    if (mandiolaPhase !== "result") return;
+    const playerName = MANDIOLA_PLAYERS[playerIdx];
+    if (!currentMandiolaWinners.includes(playerName)) return;
+
+    const wasGifted = mandiolaGiftedByPlayer[mandiolaQuestionIdx]?.[playerIdx];
+    if (!wasGifted && mandiolaAvailableGiftShots <= 0) return;
+
+    setMandiolaGiftedByPlayer((previous) => {
+      const next = previous.map((roundGifts) => [...roundGifts]);
+      next[mandiolaQuestionIdx][playerIdx] = !Boolean(wasGifted);
+      return next;
+    });
   }
 
   return (
@@ -496,114 +613,202 @@ export default function ActivitiesSection() {
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    {CIERTO_BIOTTI_ITEMS.map((item, index) => (
-                      <article
-                        key={item.title}
-                        className="rounded-2xl border border-white/20 bg-white/5 p-4 sm:p-5"
-                      >
-                        <h4 className="font-display text-2xl text-white">{item.title}</h4>
-                        <p className="mt-2 text-white/85 font-body text-sm leading-relaxed">
-                          {item.story}
+                  <article className="rounded-2xl border border-white/20 bg-white/5 p-4 sm:p-5">
+                    <div className="flex items-center justify-between gap-3">
+                      <h4 className="font-display text-2xl text-white">{currentMandiolaItem.title}</h4>
+                      <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-mono uppercase tracking-[0.14em] text-white/70">
+                        Pregunta {mandiolaQuestionIdx + 1} / {CIERTO_BIOTTI_ITEMS.length}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-white/85 font-body text-sm leading-relaxed">
+                      {currentMandiolaItem.story}
+                    </p>
+
+                    {mandiolaPhase === "vote" ? (
+                      <>
+                        <p className="mt-4 text-[11px] font-mono uppercase tracking-[0.16em] text-miami-blue/90">
+                          Etapa 1: Votación (solo íconos)
                         </p>
-                        <div className="mt-3">
-                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                          {MANDIOLA_PLAYERS.map((player, playerIdx) => {
+                            const vote = currentMandiolaVotes[playerIdx];
+                            return (
+                              <div
+                                key={player}
+                                className="rounded-xl border border-white/15 bg-black/20 px-3 py-2 flex items-center justify-between gap-2"
+                              >
+                                <span className="text-sm text-white/90 font-body truncate">
+                                  {player}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => markMandiolaVote(playerIdx, "true")}
+                                    className={cn(
+                                      "inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-colors",
+                                      vote === "true"
+                                        ? "border-emerald-300/80 bg-emerald-500/25 text-emerald-100"
+                                        : "border-white/20 bg-white/5 text-white/70 hover:bg-white/10"
+                                    )}
+                                    aria-label={`Voto cierto para ${player}`}
+                                  >
+                                    <CheckCircle2 className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => markMandiolaVote(playerIdx, "false")}
+                                    className={cn(
+                                      "inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-colors",
+                                      vote === "false"
+                                        ? "border-rose-300/80 bg-rose-500/25 text-rose-100"
+                                        : "border-white/20 bg-white/5 text-white/70 hover:bg-white/10"
+                                    )}
+                                    aria-label={`Voto falso para ${player}`}
+                                  >
+                                    <XCircle className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {allMandiolaVotesDone && (
+                          <div className="mt-3">
                             <button
                               type="button"
-                              onClick={() => {
-                                setMandiolaGiftedByRound((previous) => {
-                                  const next = [...previous];
-                                  next[index] = false;
-                                  return next;
-                                });
-                                setMandiolaResults((previous) => {
-                                  const next = [...previous];
-                                  next[index] = "correct";
-                                  return next;
-                                });
-                              }}
-                              className={cn(
-                                "inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-body",
-                                mandiolaResults[index] === "correct"
-                                  ? "border-emerald-300/70 bg-emerald-500/25 text-emerald-100"
-                                  : "border-emerald-300/35 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20"
-                              )}
+                              onClick={onShowMandiolaVerdict}
+                              className="inline-flex items-center gap-2 rounded-xl border border-amber-300/45 bg-amber-500/10 px-3 py-2 text-amber-200 text-sm font-body hover:bg-amber-500/20"
                             >
-                              Acierto
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setMandiolaResults((previous) => {
-                                  const next = [...previous];
-                                  next[index] = "wrong";
-                                  return next;
-                                });
-                              }}
-                              className={cn(
-                                "inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-body",
-                                mandiolaResults[index] === "wrong"
-                                  ? "border-rose-300/70 bg-rose-500/25 text-rose-100"
-                                  : "border-rose-300/35 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20"
-                              )}
-                            >
-                              Error
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (mandiolaGiftedByRound[index]) {
-                                  setMandiolaGiftedByRound((previous) => {
-                                    const next = [...previous];
-                                    next[index] = false;
-                                    return next;
-                                  });
-                                  return;
-                                }
-                                if (mandiolaAvailableGiftShots <= 0) return;
-                                setMandiolaGiftedByRound((previous) => {
-                                  const next = [...previous];
-                                  next[index] = true;
-                                  return next;
-                                });
-                              }}
-                              disabled={!mandiolaGiftedByRound[index] && mandiolaAvailableGiftShots <= 0}
-                              className={cn(
-                                "inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-body",
-                                mandiolaGiftedByRound[index]
-                                  ? "border-fuchsia-300/70 bg-fuchsia-500/25 text-fuchsia-100"
-                                  : "border-fuchsia-300/35 bg-fuchsia-500/10 text-fuchsia-200 hover:bg-fuchsia-500/20",
-                                !mandiolaGiftedByRound[index] &&
-                                  mandiolaAvailableGiftShots <= 0 &&
-                                  "opacity-45 cursor-not-allowed"
-                              )}
-                            >
-                              {mandiolaGiftedByRound[index] ? "Shot regalado" : "Regalar shot"}
+                              Mostrar veredicto
                             </button>
                           </div>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setShowMandiolaVerdict((previous) => {
-                                const next = [...previous];
-                                next[index] = !next[index];
-                                return next;
-                              })
-                            }
-                            className="inline-flex items-center gap-2 rounded-xl border border-amber-300/45 bg-amber-500/10 px-3 py-2 text-amber-200 text-sm font-body hover:bg-amber-500/20"
-                          >
-                            {showMandiolaVerdict[index] ? "Ocultar veredicto" : "Mostrar veredicto"}
-                          </button>
-                        </div>
-                        {showMandiolaVerdict[index] && (
-                          <p className="mt-3 rounded-xl border border-fuchsia-300/35 bg-fuchsia-500/10 px-3 py-2 text-fuchsia-100 font-body text-sm">
-                            Veredicto: {item.verdict}
-                          </p>
                         )}
-                      </article>
-                    ))}
-                  </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="mt-4 text-[11px] font-mono uppercase tracking-[0.16em] text-fuchsia-200/90">
+                          Etapa 2: Veredicto y ganadores
+                        </p>
+                        <p className="mt-2 rounded-xl border border-fuchsia-300/35 bg-fuchsia-500/10 px-3 py-2 text-fuchsia-100 font-body text-sm">
+                          Veredicto: {currentMandiolaItem.verdict}
+                        </p>
+                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="rounded-xl border border-emerald-300/35 bg-emerald-500/10 p-3">
+                            <p className="text-[10px] uppercase tracking-wider font-mono text-emerald-200/85">
+                              Ganadores (pueden regalar shot)
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {currentMandiolaWinners.length === 0 ? (
+                                <span className="text-sm text-emerald-100/80 font-body">
+                                  Nadie acertó.
+                                </span>
+                              ) : (
+                                currentMandiolaWinners.map((player) => (
+                                  <span
+                                    key={player}
+                                    className="rounded-full border border-emerald-200/45 bg-emerald-500/20 px-2.5 py-1 text-xs text-emerald-100 font-body"
+                                  >
+                                    {player}
+                                  </span>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                          <div className="rounded-xl border border-rose-300/35 bg-rose-500/10 p-3">
+                            <p className="text-[10px] uppercase tracking-wider font-mono text-rose-200/85">
+                              Toman shot
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {currentMandiolaLosers.length === 0 ? (
+                                <span className="text-sm text-rose-100/80 font-body">Nadie.</span>
+                              ) : (
+                                currentMandiolaLosers.map((player) => (
+                                  <span
+                                    key={player}
+                                    className="rounded-full border border-rose-200/45 bg-rose-500/20 px-2.5 py-1 text-xs text-rose-100 font-body"
+                                  >
+                                    {player}
+                                  </span>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 rounded-xl border border-fuchsia-300/30 bg-fuchsia-500/5 p-3">
+                          <p className="text-[10px] uppercase tracking-wider font-mono text-fuchsia-200/85 mb-2">
+                            Regalar shot (solo ganadores)
+                          </p>
+                          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                            {MANDIOLA_PLAYERS.map((player, playerIdx) => {
+                              const isWinner = currentMandiolaWinners.includes(player);
+                              const gifted = Boolean(
+                                mandiolaGiftedByPlayer[mandiolaQuestionIdx]?.[playerIdx]
+                              );
+                              const disabled = !isWinner && !gifted;
+                              return (
+                                <button
+                                  key={`${player}-gift`}
+                                  type="button"
+                                  onClick={() => toggleMandiolaGift(playerIdx)}
+                                  disabled={disabled}
+                                  className={cn(
+                                    "inline-flex h-9 items-center justify-center rounded-lg border px-2 text-xs font-body transition-colors",
+                                    gifted
+                                      ? "border-fuchsia-300/80 bg-fuchsia-500/25 text-fuchsia-100"
+                                      : "border-white/20 bg-white/5 text-white/75 hover:bg-white/10",
+                                    disabled && "opacity-40 cursor-not-allowed"
+                                  )}
+                                  aria-label={`Regalar shot ${player}`}
+                                  title={player}
+                                >
+                                  <PartyPopper className="h-4 w-4" />
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={onPreviousMandiolaStage}
+                        disabled={mandiolaPhase === "vote" && isFirstMandiolaQuestion}
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-xl border px-4 py-2 font-body",
+                          mandiolaPhase === "vote" && isFirstMandiolaQuestion
+                            ? "border-white/15 bg-white/10 text-white/40 cursor-not-allowed"
+                            : "border-white/35 bg-white/10 text-white/85 hover:bg-white/15"
+                        )}
+                      >
+                        Anterior
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onNextMandiolaStage}
+                        disabled={
+                          (mandiolaPhase === "vote" && !allMandiolaVotesDone) ||
+                          (mandiolaPhase === "result" && isLastMandiolaQuestion)
+                        }
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-xl border px-4 py-2 font-body",
+                          (mandiolaPhase === "vote" && !allMandiolaVotesDone) ||
+                            (mandiolaPhase === "result" && isLastMandiolaQuestion)
+                            ? "border-white/15 bg-white/10 text-white/40 cursor-not-allowed"
+                            : "border-miami-blue/55 bg-miami-blue/15 text-miami-blue hover:bg-miami-blue/25"
+                        )}
+                      >
+                        {mandiolaPhase === "vote"
+                          ? "Siguiente"
+                          : isLastMandiolaQuestion
+                            ? "Trivia completa"
+                            : "Siguiente"}
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </article>
                 </div>
               ) : activeActivity.id !== "preguntas-novia" ? (
                 <div className="min-h-[280px] flex flex-col items-center justify-center text-center">
