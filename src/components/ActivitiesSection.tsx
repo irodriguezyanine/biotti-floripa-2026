@@ -35,6 +35,7 @@ type NoviaQuestion = {
 };
 
 type NoviaGameStage =
+  | "cover"
   | "instructions"
   | "intro-video"
   | "questions"
@@ -156,7 +157,7 @@ export default function ActivitiesSection() {
   const [questionResults, setQuestionResults] = useState<ResultMark[]>(
     () => NOVIA_QUESTIONS.map(() => null)
   );
-  const [noviaStage, setNoviaStage] = useState<NoviaGameStage>("instructions");
+  const [noviaStage, setNoviaStage] = useState<NoviaGameStage>("cover");
 
   const INTRO_VIDEO_URL = "/videos/vale/Introduccion.mp4";
   const BONUS_QUESTION_VIDEO_URL = "/videos/vale/bonus-pregunta-01.mp4";
@@ -173,7 +174,6 @@ export default function ActivitiesSection() {
   const yesCount = questionResults.filter((item) => item === "yes").length;
   const soSoCount = questionResults.filter((item) => item === "so-so").length;
   const noCount = questionResults.filter((item) => item === "no").length;
-  const pendingCount = questionResults.filter((item) => item === null).length;
   const totalScore = yesCount + soSoCount * 0.5;
 
   function closePasswordModal() {
@@ -187,7 +187,7 @@ export default function ActivitiesSection() {
     setCurrentQuestionIdx(0);
     setQuestionStep("question");
     setQuestionResults(NOVIA_QUESTIONS.map(() => null));
-    setNoviaStage("instructions");
+    setNoviaStage("cover");
   }
 
   function onOpenActivity(activityId: string) {
@@ -197,7 +197,7 @@ export default function ActivitiesSection() {
         setCurrentQuestionIdx(0);
         setQuestionStep("question");
         setQuestionResults(NOVIA_QUESTIONS.map(() => null));
-        setNoviaStage("instructions");
+        setNoviaStage("cover");
       }
       return;
     }
@@ -217,7 +217,7 @@ export default function ActivitiesSection() {
         setCurrentQuestionIdx(0);
         setQuestionStep("question");
         setQuestionResults(NOVIA_QUESTIONS.map(() => null));
-        setNoviaStage("instructions");
+        setNoviaStage("cover");
       }
       closePasswordModal();
       return;
@@ -395,32 +395,78 @@ export default function ActivitiesSection() {
                 </div>
               ) : (
                 <>
-                  <div className="mb-5">
-                    <h3 className="font-display text-3xl sm:text-4xl text-white">
+                  <div className="mb-6 rounded-2xl border border-fuchsia-300/30 bg-gradient-to-r from-fuchsia-500/15 via-violet-500/10 to-cyan-500/10 px-4 py-4 sm:px-5">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-miami-blue font-mono mb-2">
+                      Modo Juego
+                    </p>
+                    <h3 className="font-display text-3xl sm:text-5xl text-white">
                       Preguntas Novia
                     </h3>
-                    <p className="mt-2 text-white/65 text-sm font-body">
-                      Modo diapositiva: lean la pregunta y luego muestren el video de la respuesta.
+                    <p className="mt-2 text-white/70 text-sm sm:text-base font-body">
+                      3 etapas por pregunta: pregunta, video y evaluación del novio.
                     </p>
                   </div>
 
+                  {noviaStage === "cover" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-violet-950/65 to-sky-950/75 p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
+                      <div className="rounded-2xl border border-fuchsia-300/35 bg-fuchsia-500/10 p-5 sm:p-6">
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-miami-blue font-mono mb-2">
+                          Portada del juego
+                        </p>
+                        <h4 className="font-display text-3xl sm:text-4xl text-white">
+                          Desafío: Preguntas Novia vs Novio
+                        </h4>
+                        <p className="mt-3 text-white/85 font-body text-sm sm:text-base leading-relaxed">
+                          Biotti debe adivinar respuestas personales de Vale en 15 rondas.
+                          Cada pregunta se juega en 3 etapas: leer pregunta, ver video respuesta
+                          de Vale y evaluar si el novio acertó.
+                        </p>
+                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-center">
+                            <p className="text-xs font-mono uppercase tracking-wider text-white/65">Etapa 1</p>
+                            <p className="text-white font-body text-sm">Pregunta</p>
+                          </div>
+                          <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-center">
+                            <p className="text-xs font-mono uppercase tracking-wider text-white/65">Etapa 2</p>
+                            <p className="text-white font-body text-sm">Video</p>
+                          </div>
+                          <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-center">
+                            <p className="text-xs font-mono uppercase tracking-wider text-white/65">Etapa 3</p>
+                            <p className="text-white font-body text-sm">Resultado</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setNoviaStage("instructions")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
+                        >
+                          Ver instrucciones
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {noviaStage === "instructions" && (
-                    <div className="rounded-2xl border border-white/20 bg-black/25 p-5 sm:p-6">
-                      <div className="rounded-2xl border border-miami-blue/30 bg-miami-blue/10 p-4 sm:p-5">
-                        <h4 className="font-display text-2xl text-white">Instrucciones</h4>
-                        <ul className="mt-3 space-y-2 text-white/80 font-body text-sm">
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-sky-900/55 to-slate-950/70 p-5 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
+                      <div className="rounded-2xl border border-miami-blue/40 bg-miami-blue/10 p-4 sm:p-6">
+                        <h4 className="font-display text-3xl text-white">Instrucciones</h4>
+                        <ul className="mt-4 space-y-2.5 text-white/90 font-body text-base">
                           <li>1) Lee la pregunta en voz alta.</li>
                           <li>2) Biotti responde.</li>
                           <li>3) Recién ahí muestra el video de Vale.</li>
                           <li>4) Si el novio adivina, toman todos.</li>
                           <li>5) Si el novio no adivina, toma 2.</li>
+                          <li>6) Si el novio gana, todos toman al seco. Si el novio pierde, toma al seco.</li>
                         </ul>
                       </div>
                       <div className="mt-4 flex justify-end">
                         <button
                           type="button"
                           onClick={() => setNoviaStage("intro-video")}
-                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-miami-blue/15 px-4 py-2 text-miami-blue font-body hover:bg-miami-blue/25"
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
                         >
                           Siguiente
                           <ChevronRight className="h-4 w-4" />
@@ -430,8 +476,8 @@ export default function ActivitiesSection() {
                   )}
 
                   {noviaStage === "intro-video" && (
-                    <div className="rounded-2xl border border-white/20 bg-black/25 p-4 sm:p-6">
-                      <div className="rounded-2xl border border-fuchsia-300/30 bg-black/40 p-3">
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-violet-950/65 to-slate-950/75 p-4 sm:p-6">
+                      <div className="rounded-2xl border border-fuchsia-300/35 bg-black/40 p-3">
                         <video
                           controls
                           src={INTRO_VIDEO_URL}
@@ -442,7 +488,7 @@ export default function ActivitiesSection() {
                         <button
                           type="button"
                           onClick={() => setNoviaStage("questions")}
-                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-miami-blue/15 px-4 py-2 text-miami-blue font-body hover:bg-miami-blue/25"
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
                         >
                           Siguiente
                           <ChevronRight className="h-4 w-4" />
@@ -452,39 +498,12 @@ export default function ActivitiesSection() {
                   )}
 
                   {noviaStage === "questions" && (
-                    <div className="rounded-2xl border border-white/20 bg-black/25 p-4 sm:p-6">
-                      <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <div className="rounded-xl border border-emerald-300/35 bg-emerald-500/10 p-2 text-center">
-                          <p className="text-[11px] font-mono uppercase tracking-wider text-emerald-200/85">
-                            Sí
-                          </p>
-                          <p className="text-xl font-display text-emerald-200">{yesCount}</p>
-                        </div>
-                        <div className="rounded-xl border border-amber-300/35 bg-amber-500/10 p-2 text-center">
-                          <p className="text-[11px] font-mono uppercase tracking-wider text-amber-200/85">
-                            Más o menos
-                          </p>
-                          <p className="text-xl font-display text-amber-200">{soSoCount}</p>
-                        </div>
-                        <div className="rounded-xl border border-rose-300/35 bg-rose-500/10 p-2 text-center">
-                          <p className="text-[11px] font-mono uppercase tracking-wider text-rose-200/85">
-                            No
-                          </p>
-                          <p className="text-xl font-display text-rose-200">{noCount}</p>
-                        </div>
-                        <div className="rounded-xl border border-white/25 bg-white/10 p-2 text-center">
-                          <p className="text-[11px] font-mono uppercase tracking-wider text-white/75">
-                            Pendientes
-                          </p>
-                          <p className="text-xl font-display text-white">{pendingCount}</p>
-                        </div>
-                      </div>
-
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-slate-900/70 to-sky-950/80 p-4 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
                       <div className="flex items-center justify-between gap-2 mb-4">
                         <span className="text-xs font-mono uppercase tracking-[0.18em] text-white/65">
                           Pregunta {currentQuestionIdx + 1} / {NOVIA_QUESTIONS.length}
                         </span>
-                        <span className="text-[11px] font-mono uppercase tracking-[0.18em] text-miami-blue">
+                        <span className="text-[11px] font-mono uppercase tracking-[0.18em] text-miami-blue rounded-full border border-miami-blue/40 bg-miami-blue/10 px-2 py-1">
                           Etapa:{" "}
                           {questionStep === "question"
                             ? "pregunta"
@@ -503,7 +522,7 @@ export default function ActivitiesSection() {
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -12 }}
                               transition={{ duration: 0.24 }}
-                              className="rounded-2xl border border-fuchsia-300/30 bg-fuchsia-500/10 p-5 sm:p-7"
+                              className="rounded-2xl border border-fuchsia-300/30 bg-gradient-to-r from-fuchsia-500/15 to-violet-500/10 p-5 sm:p-7"
                             >
                               <p className="font-display text-2xl sm:text-3xl text-white leading-tight">
                                 {currentQuestion.question}
@@ -514,7 +533,7 @@ export default function ActivitiesSection() {
                             <button
                               type="button"
                               onClick={() => setQuestionStep("video")}
-                              className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-miami-blue/15 px-4 py-2 text-miami-blue font-body hover:bg-miami-blue/25"
+                              className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
                             >
                               Siguiente
                               <ChevronRight className="h-4 w-4" />
@@ -525,7 +544,7 @@ export default function ActivitiesSection() {
 
                       {questionStep === "video" && (
                         <>
-                          <div className="rounded-2xl border border-white/20 bg-black/35 p-3">
+                          <div className="rounded-2xl border border-white/20 bg-black/45 p-3">
                             {currentQuestion.videoUrl ? (
                               <video
                                 controls
@@ -545,7 +564,7 @@ export default function ActivitiesSection() {
                             <button
                               type="button"
                               onClick={() => setQuestionStep("result")}
-                              className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-miami-blue/15 px-4 py-2 text-miami-blue font-body hover:bg-miami-blue/25"
+                              className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
                             >
                               Siguiente
                               <ChevronRight className="h-4 w-4" />
@@ -556,7 +575,7 @@ export default function ActivitiesSection() {
 
                       {questionStep === "result" && (
                         <>
-                          <div className="rounded-2xl border border-white/20 bg-black/35 p-5">
+                          <div className="rounded-2xl border border-white/20 bg-gradient-to-br from-slate-900/90 to-black/70 p-5">
                             <p className="font-display text-2xl text-white">
                               ¿El novio respondió bien?
                             </p>
@@ -621,27 +640,6 @@ export default function ActivitiesSection() {
                         </>
                       )}
 
-                      <div className="mt-5 grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-10 gap-2">
-                        {questionResults.map((item, idx) => (
-                          <div
-                            key={`result-${idx + 1}`}
-                            className="rounded-lg border border-white/20 bg-white/5 px-2 py-1.5 text-center"
-                          >
-                            <p className="text-[10px] font-mono text-white/60">{idx + 1}</p>
-                            <div className="mt-1 flex justify-center">
-                              {item === "yes" ? (
-                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" />
-                              ) : item === "so-so" ? (
-                                <Circle className="h-3.5 w-3.5 text-amber-300" />
-                              ) : item === "no" ? (
-                                <XCircle className="h-3.5 w-3.5 text-rose-300" />
-                              ) : (
-                                <Circle className="h-3.5 w-3.5 text-white/45" />
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
                     </div>
                   )}
 
@@ -649,7 +647,7 @@ export default function ActivitiesSection() {
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="rounded-2xl border border-amber-300/45 bg-amber-500/10 p-6 sm:p-8 text-center"
+                      className="rounded-3xl border border-amber-300/45 bg-gradient-to-r from-amber-500/15 via-orange-400/10 to-fuchsia-500/10 p-6 sm:p-8 text-center"
                     >
                       <motion.p
                         animate={{ scale: [1, 1.06, 1] }}
@@ -664,7 +662,7 @@ export default function ActivitiesSection() {
                       <button
                         type="button"
                         onClick={() => setNoviaStage("bonus-question-video")}
-                        className="mt-5 inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-miami-blue/15 px-4 py-2 text-miami-blue font-body hover:bg-miami-blue/25"
+                        className="mt-5 inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
                       >
                         Siguiente
                         <ChevronRight className="h-4 w-4" />
@@ -673,7 +671,7 @@ export default function ActivitiesSection() {
                   )}
 
                   {noviaStage === "bonus-question-video" && (
-                    <div className="rounded-2xl border border-white/20 bg-black/25 p-4 sm:p-6">
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-violet-950/65 to-slate-950/75 p-4 sm:p-6">
                       <div className="rounded-2xl border border-fuchsia-300/30 bg-black/40 p-3">
                         <video
                           controls
@@ -685,7 +683,7 @@ export default function ActivitiesSection() {
                         <button
                           type="button"
                           onClick={() => setNoviaStage("bonus-answer-video")}
-                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-miami-blue/15 px-4 py-2 text-miami-blue font-body hover:bg-miami-blue/25"
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
                         >
                           Siguiente
                           <ChevronRight className="h-4 w-4" />
@@ -695,7 +693,7 @@ export default function ActivitiesSection() {
                   )}
 
                   {noviaStage === "bonus-answer-video" && (
-                    <div className="rounded-2xl border border-white/20 bg-black/25 p-4 sm:p-6">
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-emerald-950/45 to-slate-950/80 p-4 sm:p-6">
                       <div className="rounded-2xl border border-emerald-300/30 bg-black/40 p-3">
                         <video
                           controls
