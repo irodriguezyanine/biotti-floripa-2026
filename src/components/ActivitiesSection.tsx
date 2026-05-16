@@ -17,6 +17,7 @@ import {
   Trophy,
   UserRound,
   X,
+  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,17 +35,24 @@ type NoviaQuestion = {
   videoUrl: string;
 };
 
+type BonusTrack = {
+  title: string;
+  questionVideoUrl: string;
+  answerVideoUrl: string;
+};
+
 type NoviaGameStage =
   | "cover"
   | "instructions"
   | "intro-video"
   | "questions"
   | "bonus-track"
-  | "bonus-question-video"
-  | "bonus-answer-video";
+  | "bonus-rounds"
+  | "final-report";
 
 type QuestionStep = "question" | "respond" | "video" | "result";
 type ResultMark = "yes" | "so-so" | "no" | null;
+type BonusStep = "question-video" | "respond" | "answer-video" | "result";
 type CiertoBiottiItem = {
   title: string;
   story: string;
@@ -207,21 +215,46 @@ const NOVIA_QUESTIONS: NoviaQuestion[] = [
     videoUrl: "/videos/vale/pregunta-14-posicion-favorita-seba.mp4",
   },
   {
-    question: "15. Disfraz favorito de Sebastián para el sexo. O vestimenta.",
+    question: "15. Disfraz favorito de Sebastián para el sexo.",
     videoUrl: "/videos/vale/pregunta-15-disfraz-favorito.mp4",
+  },
+];
+
+const BONUS_TRACKS: BonusTrack[] = [
+  {
+    title: "Bonus 1: Vale pregunta",
+    questionVideoUrl: "/videos/vale/bonus-pregunta-01.mp4",
+    answerVideoUrl: "/videos/vale/bonus-respuesta-01.mp4",
+  },
+  {
+    title: "Bonus 2: Vale pregunta",
+    questionVideoUrl: "/videos/vale/bonus-pregunta-02.mp4",
+    answerVideoUrl: "/videos/vale/bonus-respuesta-02.mp4",
+  },
+  {
+    title: "Bonus 3: Vale pregunta",
+    questionVideoUrl: "/videos/vale/bonus-pregunta-03.mp4",
+    answerVideoUrl: "/videos/vale/bonus-respuesta-03.mp4",
   },
 ];
 
 export default function ActivitiesSection() {
   const [passwordModalFor, setPasswordModalFor] = useState<string | null>(null);
+  const [resumePromptFor, setResumePromptFor] = useState<string | null>(null);
   const [activeActivityId, setActiveActivityId] = useState<string | null>(null);
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [unlocked, setUnlocked] = useState<Record<string, boolean>>({});
+  const [activitySessionExists, setActivitySessionExists] = useState<Record<string, boolean>>({});
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [questionStep, setQuestionStep] = useState<QuestionStep>("question");
   const [questionResults, setQuestionResults] = useState<ResultMark[]>(
     () => NOVIA_QUESTIONS.map(() => null)
+  );
+  const [bonusIdx, setBonusIdx] = useState(0);
+  const [bonusStep, setBonusStep] = useState<BonusStep>("question-video");
+  const [bonusResults, setBonusResults] = useState<ResultMark[]>(() =>
+    BONUS_TRACKS.map(() => null)
   );
   const [mandiolaQuestionIdx, setMandiolaQuestionIdx] = useState(0);
   const [mandiolaPhase, setMandiolaPhase] = useState<MandiolaPhase>("vote");
@@ -237,8 +270,6 @@ export default function ActivitiesSection() {
   const [noviaStage, setNoviaStage] = useState<NoviaGameStage>("cover");
 
   const INTRO_VIDEO_URL = "/videos/vale/Introduccion.mp4";
-  const BONUS_QUESTION_VIDEO_URL = "/videos/vale/bonus-pregunta-01.mp4";
-  const BONUS_ANSWER_VIDEO_URL = "/videos/vale/bonus-respuesta-01.mp4";
 
   const activeActivity = useMemo(
     () => ACTIVITIES.find((item) => item.id === activeActivityId) ?? null,
@@ -248,10 +279,23 @@ export default function ActivitiesSection() {
   const currentQuestion = NOVIA_QUESTIONS[currentQuestionIdx];
   const isLastQuestion = currentQuestionIdx === NOVIA_QUESTIONS.length - 1;
   const currentResult = questionResults[currentQuestionIdx];
+  const currentBonus = BONUS_TRACKS[bonusIdx];
+  const isLastBonus = bonusIdx === BONUS_TRACKS.length - 1;
+  const currentBonusResult = bonusResults[bonusIdx];
   const yesCount = questionResults.filter((item) => item === "yes").length;
   const soSoCount = questionResults.filter((item) => item === "so-so").length;
   const noCount = questionResults.filter((item) => item === "no").length;
   const totalScore = yesCount + soSoCount * 0.5;
+  const bonusYesCount = bonusResults.filter((item) => item === "yes").length;
+  const bonusSoSoCount = bonusResults.filter((item) => item === "so-so").length;
+  const bonusNoCount = bonusResults.filter((item) => item === "no").length;
+  const bonusScore = bonusYesCount + bonusSoSoCount * 0.5;
+  const overallYesCount = yesCount + bonusYesCount;
+  const overallSoSoCount = soSoCount + bonusSoSoCount;
+  const overallNoCount = noCount + bonusNoCount;
+  const overallQuestionsCount = NOVIA_QUESTIONS.length + BONUS_TRACKS.length;
+  const overallScore = totalScore + bonusScore;
+  const overallAccuracy = (overallScore / overallQuestionsCount) * 100;
   const currentMandiolaItem = CIERTO_BIOTTI_ITEMS[mandiolaQuestionIdx];
   const currentMandiolaVotes = mandiolaVotes[mandiolaQuestionIdx] ?? [];
   const allMandiolaVotesDone = currentMandiolaVotes.every((vote) => vote !== null);
@@ -296,36 +340,64 @@ export default function ActivitiesSection() {
     setPasswordError("");
   }
 
-  function closeActivityModal() {
-    setActiveActivityId(null);
+  function resetPreguntasNoviaState() {
     setCurrentQuestionIdx(0);
     setQuestionStep("question");
     setQuestionResults(NOVIA_QUESTIONS.map(() => null));
+    setBonusIdx(0);
+    setBonusStep("question-video");
+    setBonusResults(BONUS_TRACKS.map(() => null));
+    setNoviaStage("cover");
+  }
+
+  function resetMandiolaState() {
     setMandiolaQuestionIdx(0);
     setMandiolaPhase("vote");
     setMandiolaVotes(CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => null)));
     setMandiolaResolvedRounds(CIERTO_BIOTTI_ITEMS.map(() => false));
     setMandiolaGiftedByPlayer(CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => false)));
-    setNoviaStage("cover");
+  }
+
+  function resetActivityState(activityId: string) {
+    if (activityId === "preguntas-novia") {
+      resetPreguntasNoviaState();
+      return;
+    }
+    if (activityId === "actividad-mandiola") {
+      resetMandiolaState();
+    }
+  }
+
+  function openActivity(activityId: string, options?: { restart?: boolean }) {
+    if (options?.restart) {
+      resetActivityState(activityId);
+    }
+    setActiveActivityId(activityId);
+    setActivitySessionExists((previous) => ({ ...previous, [activityId]: true }));
+  }
+
+  function closeActivityModal() {
+    if (activeActivityId) {
+      setActivitySessionExists((previous) => ({ ...previous, [activeActivityId]: true }));
+    }
+    setActiveActivityId(null);
+  }
+
+  function onRestartCurrentActivity() {
+    if (!activeActivityId) return;
+    const confirmed = window.confirm(
+      "¿Seguro que quieres reiniciar esta actividad desde el principio?"
+    );
+    if (!confirmed) return;
+    resetActivityState(activeActivityId);
   }
 
   function onOpenActivity(activityId: string) {
     if (unlocked[activityId]) {
-      setActiveActivityId(activityId);
-      if (activityId === "preguntas-novia") {
-        setCurrentQuestionIdx(0);
-        setQuestionStep("question");
-        setQuestionResults(NOVIA_QUESTIONS.map(() => null));
-        setNoviaStage("cover");
-      }
-      if (activityId === "actividad-mandiola") {
-        setMandiolaQuestionIdx(0);
-        setMandiolaPhase("vote");
-        setMandiolaVotes(CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => null)));
-        setMandiolaResolvedRounds(CIERTO_BIOTTI_ITEMS.map(() => false));
-        setMandiolaGiftedByPlayer(
-          CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => false))
-        );
+      if (activitySessionExists[activityId]) {
+        setResumePromptFor(activityId);
+      } else {
+        openActivity(activityId);
       }
       return;
     }
@@ -340,22 +412,7 @@ export default function ActivitiesSection() {
 
     if (passwordInput.trim() === activity.password) {
       setUnlocked((previous) => ({ ...previous, [activity.id]: true }));
-      setActiveActivityId(activity.id);
-      if (activity.id === "preguntas-novia") {
-        setCurrentQuestionIdx(0);
-        setQuestionStep("question");
-        setQuestionResults(NOVIA_QUESTIONS.map(() => null));
-        setNoviaStage("cover");
-      }
-      if (activity.id === "actividad-mandiola") {
-        setMandiolaQuestionIdx(0);
-        setMandiolaPhase("vote");
-        setMandiolaVotes(CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => null)));
-        setMandiolaResolvedRounds(CIERTO_BIOTTI_ITEMS.map(() => false));
-        setMandiolaGiftedByPlayer(
-          CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => false))
-        );
-      }
+      openActivity(activity.id, { restart: true });
       closePasswordModal();
       return;
     }
@@ -379,6 +436,31 @@ export default function ActivitiesSection() {
     }
     setCurrentQuestionIdx((prev) => prev + 1);
     setQuestionStep("question");
+  }
+
+  function markCurrentBonusResult(result: Exclude<ResultMark, null>) {
+    setBonusResults((previous) => {
+      const next = [...previous];
+      next[bonusIdx] = result;
+      return next;
+    });
+  }
+
+  function onNextAfterBonusResult() {
+    if (!currentBonusResult) return;
+    if (isLastBonus) {
+      setNoviaStage("final-report");
+      return;
+    }
+    setBonusIdx((prev) => prev + 1);
+    setBonusStep("question-video");
+  }
+
+  function getFinalBiottiTitle() {
+    if (overallAccuracy >= 85) return "BIOTTI ORÁCULO SUPREMO";
+    if (overallAccuracy >= 65) return "BIOTTI MODO ADIVINO";
+    if (overallAccuracy >= 45) return "BIOTTI EN PARTIDA PELEADA";
+    return "BIOTTI NECESITA REFUERZOS";
   }
 
   function markMandiolaVote(playerIdx: number, vote: Exclude<MandiolaVote, null>) {
@@ -550,6 +632,66 @@ export default function ActivitiesSection() {
       </AnimatePresence>
 
       <AnimatePresence>
+        {resumePromptFor && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[1105] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"
+            onClick={() => setResumePromptFor(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 16, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.97 }}
+              onClick={(event) => event.stopPropagation()}
+              className="w-full max-w-md rounded-2xl border border-white/25 glass-card p-6"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-display text-2xl text-white">¿Cómo quieres entrar?</h3>
+                <button
+                  type="button"
+                  onClick={() => setResumePromptFor(null)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-black/30 text-white/80 hover:bg-black/50"
+                  aria-label="Cerrar modal de retomar o reiniciar"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="mt-3 text-white/75 font-body text-sm">
+                Ya tenías una partida iniciada. ¿Quieres retomar donde estabas o reiniciar
+                desde el principio?
+              </p>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!resumePromptFor) return;
+                    openActivity(resumePromptFor);
+                    setResumePromptFor(null);
+                  }}
+                  className="rounded-xl border border-miami-blue/55 bg-miami-blue/15 px-4 py-3 text-miami-blue font-body font-semibold hover:bg-miami-blue/25 transition-colors"
+                >
+                  Retomar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!resumePromptFor) return;
+                    openActivity(resumePromptFor, { restart: true });
+                    setResumePromptFor(null);
+                  }}
+                  className="rounded-xl border border-rose-300/45 bg-rose-500/10 px-4 py-3 text-rose-200 font-body font-semibold hover:bg-rose-500/20 transition-colors"
+                >
+                  Reiniciar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {activeActivity && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -565,14 +707,25 @@ export default function ActivitiesSection() {
               onClick={(event) => event.stopPropagation()}
               className="relative w-full max-w-4xl mx-auto rounded-3xl border border-white/20 glass-card p-6 sm:p-8"
             >
-              <button
-                type="button"
-                onClick={closeActivityModal}
-                className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white/85 hover:bg-black/55"
-                aria-label="Cerrar actividad"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="absolute right-4 top-4 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onRestartCurrentActivity}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-300/45 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20"
+                  aria-label="Reiniciar actividad"
+                  title="Reiniciar actividad"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={closeActivityModal}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white/85 hover:bg-black/55"
+                  aria-label="Cerrar actividad"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
 
               {activeActivity.id === "actividad-mandiola" ? (
                 <div className="space-y-4">
@@ -1165,8 +1318,26 @@ export default function ActivitiesSection() {
                         BONUS TRACK
                       </motion.p>
                       <p className="mt-3 text-white/75 font-body">
-                        Preguntas de la novia para el novio.
+                        Preguntas finales de Vale para Biotti: 3 rondas x 4 etapas.
                       </p>
+                      <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-center">
+                          <p className="text-xs font-mono uppercase tracking-wider text-white/65">Etapa 1</p>
+                          <p className="text-white font-body text-sm">Video pregunta</p>
+                        </div>
+                        <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-center">
+                          <p className="text-xs font-mono uppercase tracking-wider text-white/65">Etapa 2</p>
+                          <p className="text-white font-body text-sm">BIOTTI RESPONDE</p>
+                        </div>
+                        <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-center">
+                          <p className="text-xs font-mono uppercase tracking-wider text-white/65">Etapa 3</p>
+                          <p className="text-white font-body text-sm">Video respuesta</p>
+                        </div>
+                        <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-center">
+                          <p className="text-xs font-mono uppercase tracking-wider text-white/65">Etapa 4</p>
+                          <p className="text-white font-body text-sm">Evaluación</p>
+                        </div>
+                      </div>
                       <div className="mt-5 flex items-center justify-between gap-3">
                         <button
                           type="button"
@@ -1180,7 +1351,11 @@ export default function ActivitiesSection() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setNoviaStage("bonus-question-video")}
+                          onClick={() => {
+                            setBonusIdx(0);
+                            setBonusStep("question-video");
+                            setNoviaStage("bonus-rounds");
+                          }}
                           className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
                         >
                           Siguiente
@@ -1190,68 +1365,303 @@ export default function ActivitiesSection() {
                     </motion.div>
                   )}
 
-                  {noviaStage === "bonus-question-video" && (
-                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-violet-950/65 to-slate-950/75 p-4 sm:p-6">
-                      <div className="rounded-2xl border border-fuchsia-300/30 bg-black/40 p-3">
-                        <video
-                          controls
-                          src={BONUS_QUESTION_VIDEO_URL}
-                          className="w-full rounded-xl max-h-[460px] bg-black"
-                        />
+                  {noviaStage === "bonus-rounds" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-slate-900/70 to-violet-950/70 p-4 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+                      <div className="flex items-center justify-between gap-2 mb-4">
+                        <span className="text-xs font-mono uppercase tracking-[0.18em] text-white/65">
+                          Bonus {bonusIdx + 1} / {BONUS_TRACKS.length}
+                        </span>
+                        <span className="text-[11px] font-mono uppercase tracking-[0.18em] text-amber-200 rounded-full border border-amber-300/40 bg-amber-500/10 px-2 py-1">
+                          Etapa:{" "}
+                          {bonusStep === "question-video"
+                            ? "video pregunta"
+                            : bonusStep === "respond"
+                              ? "responde"
+                            : bonusStep === "answer-video"
+                              ? "video respuesta"
+                              : "resultado"}
+                        </span>
                       </div>
-                      <div className="mt-4 flex items-center justify-between gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setNoviaStage("bonus-track")}
-                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
-                        >
-                          Anterior
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setNoviaStage("bonus-answer-video")}
-                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
-                        >
-                          Siguiente
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
-                      </div>
+                      <h4 className="font-display text-2xl sm:text-3xl text-white">
+                        {currentBonus.title}
+                      </h4>
+
+                      {bonusStep === "question-video" && (
+                        <>
+                          <div className="mt-4 rounded-2xl border border-fuchsia-300/30 bg-black/40 p-3">
+                            {currentBonus.questionVideoUrl ? (
+                              <video
+                                controls
+                                src={currentBonus.questionVideoUrl}
+                                className="w-full rounded-xl max-h-[460px] bg-black"
+                              />
+                            ) : (
+                              <div className="h-48 rounded-xl border border-dashed border-white/25 bg-white/5 flex flex-col items-center justify-center text-center px-4">
+                                <UserRound className="h-7 w-7 text-white/55 mb-2" />
+                                <p className="text-white/70 text-sm font-body">
+                                  Falta cargar el video de pregunta de este bonus.
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-4 flex items-center justify-between gap-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (bonusIdx === 0) {
+                                  setNoviaStage("bonus-track");
+                                  return;
+                                }
+                                setBonusIdx((prev) => prev - 1);
+                                setBonusStep("result");
+                              }}
+                              className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                            >
+                              Anterior
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setBonusStep("respond")}
+                              className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
+                            >
+                              Siguiente
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </>
+                      )}
+
+                      {bonusStep === "respond" && (
+                        <>
+                          <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mt-4 rounded-2xl border border-amber-300/35 bg-gradient-to-r from-amber-500/15 to-orange-500/10 p-6 sm:p-8 text-center"
+                          >
+                            <p className="text-xs font-mono uppercase tracking-[0.2em] text-amber-200/85">
+                              Etapa especial bonus
+                            </p>
+                            <h4 className="mt-3 font-display text-4xl sm:text-5xl text-amber-100">
+                              BIOTTI, RESPONDE
+                            </h4>
+                          </motion.div>
+                          <div className="mt-4 flex items-center justify-between gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setBonusStep("question-video")}
+                              className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                            >
+                              Anterior
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setBonusStep("answer-video")}
+                              className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
+                            >
+                              Siguiente
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </>
+                      )}
+
+                      {bonusStep === "answer-video" && (
+                        <>
+                          <div className="mt-4 rounded-2xl border border-emerald-300/30 bg-black/40 p-3">
+                            {currentBonus.answerVideoUrl ? (
+                              <video
+                                controls
+                                src={currentBonus.answerVideoUrl}
+                                className="w-full rounded-xl max-h-[460px] bg-black"
+                              />
+                            ) : (
+                              <div className="h-48 rounded-xl border border-dashed border-white/25 bg-white/5 flex flex-col items-center justify-center text-center px-4">
+                                <UserRound className="h-7 w-7 text-white/55 mb-2" />
+                                <p className="text-white/70 text-sm font-body">
+                                  Falta cargar el video de respuesta de este bonus.
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-4 flex items-center justify-between gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setBonusStep("respond")}
+                              className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                            >
+                              Anterior
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setBonusStep("result")}
+                              className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
+                            >
+                              Siguiente
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </>
+                      )}
+
+                      {bonusStep === "result" && (
+                        <>
+                          <div className="mt-4 rounded-2xl border border-white/20 bg-gradient-to-br from-slate-900/90 to-black/70 p-5">
+                            <p className="font-display text-2xl text-white">
+                              ¿Biotti respondió bien este bonus?
+                            </p>
+                            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <button
+                                type="button"
+                                onClick={() => markCurrentBonusResult("yes")}
+                                className={cn(
+                                  "inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 font-body transition-colors",
+                                  currentBonusResult === "yes"
+                                    ? "border-emerald-300/70 bg-emerald-500/25 text-emerald-100"
+                                    : "border-emerald-300/35 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20"
+                                )}
+                              >
+                                <CheckCircle2 className="h-4 w-4" />
+                                Sí
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => markCurrentBonusResult("so-so")}
+                                className={cn(
+                                  "inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 font-body transition-colors",
+                                  currentBonusResult === "so-so"
+                                    ? "border-amber-300/70 bg-amber-500/25 text-amber-100"
+                                    : "border-amber-300/35 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20"
+                                )}
+                              >
+                                <Circle className="h-4 w-4" />
+                                Más o menos
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => markCurrentBonusResult("no")}
+                                className={cn(
+                                  "inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 font-body transition-colors",
+                                  currentBonusResult === "no"
+                                    ? "border-rose-300/70 bg-rose-500/25 text-rose-100"
+                                    : "border-rose-300/35 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20"
+                                )}
+                              >
+                                <XCircle className="h-4 w-4" />
+                                No
+                              </button>
+                            </div>
+                          </div>
+                          <div className="mt-4 flex items-center justify-between gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setBonusStep("answer-video")}
+                              className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                            >
+                              Anterior
+                            </button>
+                            <button
+                              type="button"
+                              onClick={onNextAfterBonusResult}
+                              disabled={!currentBonusResult}
+                              className={cn(
+                                "inline-flex items-center gap-2 rounded-xl border px-4 py-2 font-body",
+                                currentBonusResult
+                                  ? "border-miami-blue/55 bg-miami-blue/15 text-miami-blue hover:bg-miami-blue/25"
+                                  : "border-white/15 bg-white/10 text-white/40 cursor-not-allowed"
+                              )}
+                            >
+                              {isLastBonus ? "Ver resultado final" : "Siguiente bonus"}
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
 
-                  {noviaStage === "bonus-answer-video" && (
-                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-emerald-950/45 to-slate-950/80 p-4 sm:p-6">
-                      <div className="rounded-2xl border border-emerald-300/30 bg-black/40 p-3">
-                        <video
-                          controls
-                          src={BONUS_ANSWER_VIDEO_URL}
-                          className="w-full rounded-xl max-h-[460px] bg-black"
-                        />
-                      </div>
-                      <div className="mt-4 rounded-xl border border-white/20 bg-white/5 px-4 py-3">
-                        <p className="text-white/80 font-body text-sm">
-                          Resultado final:{" "}
-                          <span className="text-emerald-300 font-semibold">{yesCount} sí</span>
-                          {" · "}
-                          <span className="text-amber-300 font-semibold">{soSoCount} más o menos</span>
-                          {" · "}
-                          <span className="text-rose-300 font-semibold">{noCount} no</span>
-                          {" · "}
-                          <span className="text-miami-blue font-semibold">
-                            Puntaje: {totalScore.toFixed(1)} / {NOVIA_QUESTIONS.length}
-                          </span>
+                  {noviaStage === "final-report" && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.96 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="rounded-3xl border border-fuchsia-300/35 bg-gradient-to-br from-violet-900/65 via-sky-950/70 to-black/75 p-5 sm:p-7 shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+                    >
+                      <div className="rounded-2xl border border-white/20 bg-white/5 p-4 sm:p-5">
+                        <p className="text-xs font-mono uppercase tracking-[0.2em] text-miami-blue">
+                          Cierre oficial del juego
+                        </p>
+                        <h4 className="mt-2 font-display text-3xl sm:text-5xl text-white">
+                          {getFinalBiottiTitle()}
+                        </h4>
+                        <p className="mt-2 text-white/75 font-body text-sm sm:text-base">
+                          Reporte final ultra pro del rendimiento de Biotti entre preguntas + bonus.
                         </p>
                       </div>
-                      <div className="mt-4 flex justify-start">
+
+                      <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
+                        <div className="rounded-xl border border-emerald-300/35 bg-emerald-500/10 p-3 text-center">
+                          <p className="text-[10px] uppercase tracking-wider font-mono text-emerald-200/85">Sí</p>
+                          <p className="font-display text-2xl text-emerald-200">{overallYesCount}</p>
+                        </div>
+                        <div className="rounded-xl border border-amber-300/35 bg-amber-500/10 p-3 text-center">
+                          <p className="text-[10px] uppercase tracking-wider font-mono text-amber-200/85">Más o menos</p>
+                          <p className="font-display text-2xl text-amber-200">{overallSoSoCount}</p>
+                        </div>
+                        <div className="rounded-xl border border-rose-300/35 bg-rose-500/10 p-3 text-center">
+                          <p className="text-[10px] uppercase tracking-wider font-mono text-rose-200/85">No</p>
+                          <p className="font-display text-2xl text-rose-200">{overallNoCount}</p>
+                        </div>
+                        <div className="rounded-xl border border-miami-blue/35 bg-miami-blue/10 p-3 text-center">
+                          <p className="text-[10px] uppercase tracking-wider font-mono text-miami-blue/85">Precisión</p>
+                          <p className="font-display text-2xl text-miami-blue">{overallAccuracy.toFixed(0)}%</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 rounded-2xl border border-white/20 bg-black/25 p-4">
+                        <p className="text-white/85 font-body text-sm sm:text-base">
+                          <span className="text-miami-blue font-semibold">Puntaje global:</span>{" "}
+                          {overallScore.toFixed(1)} / {overallQuestionsCount}
+                          {" · "}
+                          <span className="text-fuchsia-200 font-semibold">Preguntas principales:</span>{" "}
+                          {totalScore.toFixed(1)} / {NOVIA_QUESTIONS.length}
+                          {" · "}
+                          <span className="text-amber-200 font-semibold">Bonus:</span>{" "}
+                          {bonusScore.toFixed(1)} / {BONUS_TRACKS.length}
+                        </p>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-white/85 font-body">
+                          Modo fiesta: {overallAccuracy >= 70 ? "controlado" : "caótico"}
+                        </span>
+                        <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-white/85 font-body">
+                          Shots estimados: {overallNoCount}
+                        </span>
+                        <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-white/85 font-body">
+                          Nivel de drama: {overallNoCount >= 5 ? "alto" : "moderado"}
+                        </span>
+                      </div>
+
+                      <div className="mt-5 flex items-center justify-between gap-3">
                         <button
                           type="button"
-                          onClick={() => setNoviaStage("bonus-question-video")}
+                          onClick={() => {
+                            setNoviaStage("bonus-rounds");
+                            setBonusIdx(BONUS_TRACKS.length - 1);
+                            setBonusStep("result");
+                          }}
                           className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
                         >
                           Anterior
                         </button>
+                        <button
+                          type="button"
+                          onClick={onRestartCurrentActivity}
+                          className="inline-flex items-center gap-2 rounded-xl border border-fuchsia-300/45 bg-fuchsia-500/10 px-4 py-2 text-fuchsia-100 font-body hover:bg-fuchsia-500/20"
+                        >
+                          Jugar de nuevo
+                        </button>
                       </div>
-                    </div>
+                    </motion.div>
                   )}
 
                 </>
