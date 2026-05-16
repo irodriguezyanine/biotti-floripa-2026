@@ -11,7 +11,6 @@ import {
   Clock3,
   Circle,
   Crown,
-  MapPin,
   XCircle,
   KeyRound,
   Lock,
@@ -50,11 +49,26 @@ type BonusTrack = {
   answerVideoUrl: string;
 };
 
+type PreferenceWoman = {
+  name: string;
+};
+
+type PreferenceChallenge = {
+  womanName: string;
+  contenders: string[];
+  shotBid: number;
+  isLocked: boolean;
+  winner: string | null;
+};
+
 type NoviaGameStage =
   | "cover"
   | "instructions"
   | "intro-video"
   | "questions"
+  | "preferences-cover"
+  | "preferences-voting"
+  | "preferences-challenges"
   | "bonus-track"
   | "bonus-rounds"
   | "final-report";
@@ -62,6 +76,7 @@ type NoviaGameStage =
 type QuestionStep = "question" | "respond" | "video" | "result";
 type ResultMark = "yes" | "so-so" | "no" | null;
 type BonusStep = "question-video" | "respond" | "answer-video" | "result";
+type PreferenceVoteStep = "handoff" | "vote";
 type CiertoBiottiItem = {
   title: string;
   story: string;
@@ -70,7 +85,8 @@ type CiertoBiottiItem = {
 };
 type MandiolaVote = "true" | "false" | null;
 type MandiolaPhase = "vote" | "result" | "summary";
-type OracionStage = "cover" | "lines";
+type OracionStage = "cover" | "lines" | "final";
+type BonusActivityStage = "intro" | "video" | "final";
 type OracionLine = {
   speaker: "novio" | "todos";
   text: string;
@@ -148,7 +164,7 @@ const ACTIVITIES: Activity[] = [
     day: "Viernes 22 Mayo",
     time: "19:15 - 20:30",
     location: "Bloque sorpresa · cierre secreto",
-    password: "Bonus2026",
+    password: "Macamu\u00f1oz",
     requiresPassword: true,
     icon: Sparkles,
     accentClass: "text-fuchsia-300",
@@ -289,6 +305,22 @@ const BONUS_TRACKS: BonusTrack[] = [
   },
 ];
 
+const PREFERENCE_WOMEN: PreferenceWoman[] = [
+  { name: "Carla" },
+  { name: "Paula" },
+  { name: "Maria" },
+  { name: "Diana" },
+  { name: "Nerea" },
+  { name: "Lola" },
+  { name: "Andrea" },
+  { name: "Irene" },
+  { name: "Laura" },
+  { name: "Lucia" },
+  { name: "Ena" },
+  { name: "Aina" },
+  { name: "Ana" },
+];
+
 const ORACION_TEAM_LINES: OracionLine[] = [
   { speaker: "novio", text: "Hermanos queridos, ¿estamos todos?" },
   { speaker: "todos", text: "¡Estamos!" },
@@ -343,6 +375,13 @@ export default function ActivitiesSection() {
   const [bonusResults, setBonusResults] = useState<ResultMark[]>(() =>
     BONUS_TRACKS.map(() => null)
   );
+  const [bonusActivityStage, setBonusActivityStage] = useState<BonusActivityStage>("intro");
+  const [preferenceVoterIdx, setPreferenceVoterIdx] = useState(0);
+  const [preferenceVoteStep, setPreferenceVoteStep] = useState<PreferenceVoteStep>("handoff");
+  const [preferenceVotes, setPreferenceVotes] = useState<(string | null)[]>(() =>
+    MANDIOLA_PLAYERS.map(() => null)
+  );
+  const [preferenceChallenges, setPreferenceChallenges] = useState<PreferenceChallenge[]>([]);
   const [oracionStage, setOracionStage] = useState<OracionStage>("cover");
   const [oracionLineIdx, setOracionLineIdx] = useState(0);
   const [mandiolaQuestionIdx, setMandiolaQuestionIdx] = useState(0);
@@ -366,6 +405,7 @@ export default function ActivitiesSection() {
   const [noviaStage, setNoviaStage] = useState<NoviaGameStage>("cover");
 
   const INTRO_VIDEO_URL = "/videos/vale/Introduccion.mp4";
+  const BONUS_ACTIVITY_VIDEO_URL = "/videos/vale/video-bonus-celedon.mp4";
 
   const activeActivity = useMemo(
     () => ACTIVITIES.find((item) => item.id === activeActivityId) ?? null,
@@ -378,6 +418,20 @@ export default function ActivitiesSection() {
   const currentBonus = BONUS_TRACKS[bonusIdx];
   const isLastBonus = bonusIdx === BONUS_TRACKS.length - 1;
   const currentBonusResult = bonusResults[bonusIdx];
+  const currentPreferenceVoterName = MANDIOLA_PLAYERS[preferenceVoterIdx];
+  const currentPreferenceVote = preferenceVotes[preferenceVoterIdx];
+  const isFirstPreferenceVoter = preferenceVoterIdx === 0;
+  const isLastPreferenceVoter = preferenceVoterIdx === MANDIOLA_PLAYERS.length - 1;
+  const allPreferenceVotesDone = preferenceVotes.every(Boolean);
+  const preferenceVotesByWoman = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    preferenceVotes.forEach((womanName, voterIdx) => {
+      if (!womanName) return;
+      if (!map[womanName]) map[womanName] = [];
+      map[womanName].push(MANDIOLA_PLAYERS[voterIdx]);
+    });
+    return map;
+  }, [preferenceVotes]);
   const currentOracionLine = ORACION_TEAM_LINES[oracionLineIdx];
   const isFirstOracionLine = oracionLineIdx === 0;
   const isLastOracionLine = oracionLineIdx === ORACION_TEAM_LINES.length - 1;
@@ -520,6 +574,10 @@ export default function ActivitiesSection() {
     setCurrentQuestionIdx(0);
     setQuestionStep("question");
     setQuestionResults(NOVIA_QUESTIONS.map(() => null));
+    setPreferenceVoterIdx(0);
+    setPreferenceVoteStep("handoff");
+    setPreferenceVotes(MANDIOLA_PLAYERS.map(() => null));
+    setPreferenceChallenges([]);
     setBonusIdx(0);
     setBonusStep("question-video");
     setBonusResults(BONUS_TRACKS.map(() => null));
@@ -529,6 +587,10 @@ export default function ActivitiesSection() {
   function resetOracionState() {
     setOracionStage("cover");
     setOracionLineIdx(0);
+  }
+
+  function resetBonusActivityState() {
+    setBonusActivityStage("intro");
   }
 
   function resetMandiolaState() {
@@ -552,6 +614,10 @@ export default function ActivitiesSection() {
     }
     if (activityId === "oracion-equipo") {
       resetOracionState();
+      return;
+    }
+    if (activityId === "bonus") {
+      resetBonusActivityState();
     }
   }
 
@@ -632,11 +698,93 @@ export default function ActivitiesSection() {
   function onNextAfterResult() {
     if (!currentResult) return;
     if (isLastQuestion) {
-      setNoviaStage("bonus-track");
+      setNoviaStage("preferences-cover");
       return;
     }
     setCurrentQuestionIdx((prev) => prev + 1);
     setQuestionStep("question");
+  }
+
+  function buildPreferenceChallenges() {
+    const duplicated = Object.entries(preferenceVotesByWoman)
+      .filter(([, voters]) => voters.length > 1)
+      .map(([womanName, voters]) => ({
+        womanName,
+        contenders: voters,
+        shotBid: 1,
+        isLocked: false,
+        winner: null,
+      }));
+    setPreferenceChallenges(duplicated);
+  }
+
+  function markPreferenceVote(womanName: string) {
+    setPreferenceVotes((previous) => {
+      const next = [...previous];
+      next[preferenceVoterIdx] = womanName;
+      return next;
+    });
+  }
+
+  function onNextPreferenceStage() {
+    if (preferenceVoteStep === "handoff") {
+      setPreferenceVoteStep("vote");
+      return;
+    }
+    if (!currentPreferenceVote) return;
+    if (isLastPreferenceVoter) {
+      buildPreferenceChallenges();
+      setNoviaStage("preferences-challenges");
+      return;
+    }
+    setPreferenceVoterIdx((prev) => prev + 1);
+    setPreferenceVoteStep("handoff");
+  }
+
+  function onPreviousPreferenceStage() {
+    if (preferenceVoteStep === "vote") {
+      setPreferenceVoteStep("handoff");
+      return;
+    }
+    if (isFirstPreferenceVoter) {
+      setNoviaStage("preferences-cover");
+      return;
+    }
+    setPreferenceVoterIdx((prev) => prev - 1);
+    setPreferenceVoteStep("vote");
+  }
+
+  function onIncreaseChallengeBid(challengeIdx: number) {
+    setPreferenceChallenges((previous) => {
+      const next = [...previous];
+      next[challengeIdx] = {
+        ...next[challengeIdx],
+        shotBid: next[challengeIdx].shotBid + 1,
+      };
+      return next;
+    });
+  }
+
+  function onLockChallenge(challengeIdx: number) {
+    setPreferenceChallenges((previous) => {
+      const next = [...previous];
+      next[challengeIdx] = {
+        ...next[challengeIdx],
+        isLocked: true,
+      };
+      return next;
+    });
+  }
+
+  function onPickChallengeWinner(challengeIdx: number, winnerName: string) {
+    setPreferenceChallenges((previous) => {
+      const next = [...previous];
+      next[challengeIdx] = {
+        ...next[challengeIdx],
+        winner: winnerName,
+      };
+      return next;
+    });
   }
 
   function markCurrentBonusResult(result: Exclude<ResultMark, null>) {
@@ -798,10 +946,6 @@ export default function ActivitiesSection() {
                   <div className="rounded-xl border border-white/15 bg-black/20 px-3 py-2 flex items-center gap-2">
                     <Clock3 className="h-4 w-4 text-amber-200 shrink-0" />
                     <p className="text-xs sm:text-sm text-white/85 font-body">{activity.time}</p>
-                  </div>
-                  <div className="rounded-xl border border-white/15 bg-black/20 px-3 py-2 flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-fuchsia-200 shrink-0" />
-                    <p className="text-xs sm:text-sm text-white/85 font-body">{activity.location}</p>
                   </div>
                 </div>
               </motion.button>
@@ -1361,7 +1505,7 @@ export default function ActivitiesSection() {
                         </button>
                       </div>
                     </div>
-                  ) : (
+                  ) : oracionStage === "lines" ? (
                     <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-slate-900/70 to-emerald-950/60 p-5 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
                       <div className="flex items-center justify-between gap-2 mb-4">
                         <span className="text-xs font-mono uppercase tracking-[0.18em] text-white/65">
@@ -1418,19 +1562,224 @@ export default function ActivitiesSection() {
                         <button
                           type="button"
                           onClick={() => {
-                            if (isLastOracionLine) return;
+                            if (isLastOracionLine) {
+                              setOracionStage("final");
+                              return;
+                            }
                             setOracionLineIdx((prev) => prev + 1);
                           }}
-                          disabled={isLastOracionLine}
-                          className={cn(
-                            "inline-flex items-center gap-2 rounded-xl border px-4 py-2 font-body",
-                            isLastOracionLine
-                              ? "border-white/15 bg-white/10 text-white/40 cursor-not-allowed"
-                              : "border-miami-blue/55 bg-miami-blue/15 text-miami-blue hover:bg-miami-blue/25"
-                          )}
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-miami-blue/15 px-4 py-2 font-body text-miami-blue hover:bg-miami-blue/25"
                         >
-                          {isLastOracionLine ? "Oración completa" : "Siguiente"}
+                          {isLastOracionLine ? "Ir al cierre" : "Siguiente"}
                           <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative overflow-hidden rounded-3xl border border-amber-300/45 bg-gradient-to-br from-amber-900/40 via-fuchsia-900/30 to-sky-950/70 p-5 sm:p-7 shadow-[0_25px_80px_rgba(0,0,0,0.45)]">
+                      <motion.div
+                        aria-hidden
+                        className="pointer-events-none absolute -left-20 top-10 h-44 w-44 rounded-full bg-amber-400/20 blur-3xl"
+                        animate={{ x: [0, 40, 0], y: [0, 20, 0], scale: [1, 1.15, 1] }}
+                        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                      />
+                      <motion.div
+                        aria-hidden
+                        className="pointer-events-none absolute -right-20 bottom-0 h-52 w-52 rounded-full bg-fuchsia-400/20 blur-3xl"
+                        animate={{ x: [0, -35, 0], y: [0, -15, 0], scale: [1, 1.2, 1] }}
+                        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                      />
+                      <motion.div
+                        aria-hidden
+                        className="pointer-events-none absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400/15 blur-2xl"
+                        animate={{ opacity: [0.3, 0.8, 0.3], scale: [0.9, 1.15, 0.9] }}
+                        transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+                      />
+
+                      <div className="relative z-10 rounded-2xl border border-amber-200/40 bg-black/20 p-4 sm:p-6 text-center">
+                        <p className="text-xs font-mono uppercase tracking-[0.22em] text-amber-200/90">
+                          Cierre de la oración
+                        </p>
+                        <motion.h4
+                          className="mt-3 font-display text-5xl sm:text-7xl text-amber-100 [text-shadow:0_0_24px_rgba(255,200,90,0.45)]"
+                          animate={{ scale: [1, 1.06, 1] }}
+                          transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          TODOS TOMAN
+                        </motion.h4>
+                        <div className="mt-4 flex items-center justify-center gap-2 sm:gap-3 text-2xl sm:text-4xl">
+                          {["🍻", "🥂", "🍻", "🥂", "🍻"].map((emoji, idx) => (
+                            <motion.span
+                              key={`brindis-${idx}`}
+                              animate={{ y: [0, -8, 0], rotate: [0, idx % 2 ? -6 : 6, 0] }}
+                              transition={{ duration: 1.1, repeat: Infinity, delay: idx * 0.12 }}
+                            >
+                              {emoji}
+                            </motion.span>
+                          ))}
+                        </div>
+                        <p className="mt-4 text-white/90 font-body text-base sm:text-lg">
+                          Se cierra el ritual. Copas arriba y brindis total del equipo.
+                        </p>
+                      </div>
+
+                      <div className="relative z-10 mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOracionStage("lines");
+                            setOracionLineIdx(ORACION_TEAM_LINES.length - 1);
+                          }}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={resetOracionState}
+                          className="inline-flex items-center gap-2 rounded-xl border border-fuchsia-300/55 bg-fuchsia-500/15 px-4 py-2 text-fuchsia-100 font-body hover:bg-fuchsia-500/25"
+                        >
+                          Reiniciar oración
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : activeActivity.id === "bonus" ? (
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-fuchsia-300/35 bg-fuchsia-500/10 p-4 sm:p-5">
+                    <h3 className="font-display text-3xl sm:text-4xl text-white">BONUS ESPECIAL</h3>
+                    <p className="mt-2 text-white/80 font-body text-sm sm:text-base">
+                      Secuencia final de 3 etapas con saludo exclusivo y cierre de brindis.
+                    </p>
+                  </div>
+
+                  {bonusActivityStage === "intro" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-fuchsia-950/60 to-sky-950/70 p-5 sm:p-7">
+                      <motion.div
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35 }}
+                        className="rounded-2xl border border-fuchsia-300/35 bg-fuchsia-500/10 p-6 sm:p-8 text-center"
+                      >
+                        <p className="text-xs font-mono uppercase tracking-[0.2em] text-fuchsia-200/85">
+                          Etapa 1
+                        </p>
+                        <motion.h4
+                          className="mt-3 font-display text-4xl sm:text-6xl text-fuchsia-100 leading-tight"
+                          animate={{ opacity: [0.65, 1, 0.65], scale: [1, 1.03, 1] }}
+                          transition={{ duration: 2.1, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          Y TENEMOS UN SALUDO MUY ESPECIAL......
+                        </motion.h4>
+                      </motion.div>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={closeActivityModal}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBonusActivityStage("video")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
+                        >
+                          Siguiente
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {bonusActivityStage === "video" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-violet-950/65 to-slate-950/75 p-4 sm:p-6">
+                      <div className="rounded-2xl border border-fuchsia-300/35 bg-black/40 p-3">
+                        <video
+                          controls
+                          src={BONUS_ACTIVITY_VIDEO_URL}
+                          className="w-full rounded-xl max-h-[460px] bg-black"
+                        />
+                      </div>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setBonusActivityStage("intro")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBonusActivityStage("final")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
+                        >
+                          Siguiente
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {bonusActivityStage === "final" && (
+                    <div className="relative overflow-hidden rounded-3xl border border-amber-300/45 bg-gradient-to-br from-amber-900/40 via-fuchsia-900/35 to-sky-950/70 p-5 sm:p-7 shadow-[0_25px_80px_rgba(0,0,0,0.45)]">
+                      <motion.div
+                        aria-hidden
+                        className="pointer-events-none absolute -left-20 top-8 h-40 w-40 rounded-full bg-amber-400/20 blur-3xl"
+                        animate={{ x: [0, 35, 0], y: [0, 20, 0], scale: [1, 1.2, 1] }}
+                        transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+                      />
+                      <motion.div
+                        aria-hidden
+                        className="pointer-events-none absolute -right-20 bottom-0 h-52 w-52 rounded-full bg-fuchsia-400/20 blur-3xl"
+                        animate={{ x: [0, -30, 0], y: [0, -10, 0], scale: [1, 1.15, 1] }}
+                        transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+                      />
+                      <motion.div
+                        className="relative z-10 rounded-2xl border border-amber-200/40 bg-black/20 p-6 sm:p-8 text-center"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.45 }}
+                      >
+                        <p className="text-xs font-mono uppercase tracking-[0.2em] text-amber-200/90">
+                          Etapa 3
+                        </p>
+                        <motion.h4
+                          className="mt-3 font-display text-5xl sm:text-7xl text-amber-100 [text-shadow:0_0_22px_rgba(255,206,90,0.45)]"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: [0.45, 1, 0.7, 1], scale: [0.92, 1.03, 1] }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          ¡ TODOS TOMAN !
+                        </motion.h4>
+                        <div className="mt-4 flex items-center justify-center gap-2 text-3xl sm:text-4xl">
+                          {["🍻", "🥂", "🍻", "🥂"].map((emoji, idx) => (
+                            <motion.span
+                              key={`bonus-toast-${idx}`}
+                              animate={{ y: [0, -7, 0], rotate: [0, idx % 2 ? -8 : 8, 0] }}
+                              transition={{ duration: 1.1, repeat: Infinity, delay: idx * 0.15 }}
+                            >
+                              {emoji}
+                            </motion.span>
+                          ))}
+                        </div>
+                      </motion.div>
+
+                      <div className="relative z-10 mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setBonusActivityStage("video")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBonusActivityStage("intro")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-fuchsia-300/45 bg-fuchsia-500/10 px-4 py-2 text-fuchsia-100 font-body hover:bg-fuchsia-500/20"
+                        >
+                          Reiniciar bonus
                         </button>
                       </div>
                     </div>
@@ -1774,6 +2123,256 @@ export default function ActivitiesSection() {
                         </>
                       )}
 
+                    </div>
+                  )}
+
+                  {noviaStage === "preferences-cover" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-violet-950/65 to-sky-950/75 p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
+                      <div className="rounded-2xl border border-fuchsia-300/35 bg-fuchsia-500/10 p-5 sm:p-6">
+                        <h4 className="font-display text-3xl sm:text-4xl text-white">
+                          Juego de preferencias
+                        </h4>
+                        <p className="mt-3 text-white/90 font-body text-sm sm:text-base leading-relaxed">
+                          Ahora viene una votación express: cada integrante tendrá 5 minutos para
+                          elegir su preferida entre las mujeres de la lista.
+                        </p>
+                        <p className="mt-3 text-white/85 font-body text-sm sm:text-base leading-relaxed">
+                          Si dos o más votan por la misma, se activa el desafío de shots por
+                          apuesta escalada (“yo puedo tomar 1, 2, 3...”) hasta que alguien diga
+                          “te creo”. Luego se define el ganador del duelo.
+                        </p>
+                        <div className="mt-4 rounded-xl border border-white/20 bg-black/20 px-4 py-3">
+                          <p className="text-xs font-mono uppercase tracking-[0.18em] text-fuchsia-200/85">
+                            Flujo
+                          </p>
+                          <p className="mt-1 text-white/85 font-body text-sm">
+                            Pasa el telefono a cada integrante -> vota -> detectar repetidos ->
+                            desafio de shots -> ganador por tarjeta.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNoviaStage("preferences-challenges");
+                          }}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNoviaStage("preferences-voting")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
+                        >
+                          Empezar votacion
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {noviaStage === "preferences-voting" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-slate-900/70 to-fuchsia-950/60 p-4 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+                      <div className="flex items-center justify-between gap-2 mb-4">
+                        <span className="text-xs font-mono uppercase tracking-[0.18em] text-white/65">
+                          Votante {preferenceVoterIdx + 1} / {MANDIOLA_PLAYERS.length}
+                        </span>
+                        <span className="text-[11px] font-mono uppercase tracking-[0.18em] text-fuchsia-200 rounded-full border border-fuchsia-300/40 bg-fuchsia-500/10 px-2 py-1">
+                          {preferenceVoteStep === "handoff" ? "pasa el telefono" : "votacion"}
+                        </span>
+                      </div>
+
+                      {preferenceVoteStep === "handoff" ? (
+                        <motion.div
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="rounded-2xl border border-amber-300/35 bg-gradient-to-r from-amber-500/15 to-orange-500/10 p-6 sm:p-8 text-center"
+                        >
+                          <p className="text-xs font-mono uppercase tracking-[0.2em] text-amber-200/85">
+                            Preparacion
+                          </p>
+                          <h4 className="mt-3 font-display text-4xl sm:text-5xl text-amber-100">
+                            Pasa el telefono a {currentPreferenceVoterName}
+                          </h4>
+                        </motion.div>
+                      ) : (
+                        <>
+                          <div className="rounded-2xl border border-fuchsia-300/30 bg-fuchsia-500/10 p-4">
+                            <p className="text-white/85 font-body text-sm sm:text-base">
+                              {currentPreferenceVoterName} vota su preferida.
+                            </p>
+                          </div>
+                          <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {PREFERENCE_WOMEN.map((woman) => (
+                              <button
+                                key={`woman-${woman.name}`}
+                                type="button"
+                                onClick={() => markPreferenceVote(woman.name)}
+                                className={cn(
+                                  "rounded-xl border px-3 py-2 text-left text-sm font-body transition-colors",
+                                  currentPreferenceVote === woman.name
+                                    ? "border-fuchsia-300/70 bg-fuchsia-500/25 text-fuchsia-100"
+                                    : "border-white/20 bg-white/5 text-white/80 hover:bg-white/10"
+                                )}
+                              >
+                                {woman.name}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={onPreviousPreferenceStage}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={onNextPreferenceStage}
+                          disabled={preferenceVoteStep === "vote" && !currentPreferenceVote}
+                          className={cn(
+                            "inline-flex items-center gap-2 rounded-xl border px-4 py-2 font-body",
+                            preferenceVoteStep === "vote" && !currentPreferenceVote
+                              ? "border-white/15 bg-white/10 text-white/40 cursor-not-allowed"
+                              : "border-miami-blue/55 bg-miami-blue/15 text-miami-blue hover:bg-miami-blue/25"
+                          )}
+                        >
+                          {preferenceVoteStep === "handoff"
+                            ? "Ir a votar"
+                            : isLastPreferenceVoter
+                              ? "Ver desafios"
+                              : "Siguiente integrante"}
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {noviaStage === "preferences-challenges" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-slate-900/70 to-rose-950/55 p-4 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+                      <h4 className="font-display text-3xl sm:text-4xl text-white">
+                        Desafio de shots por coincidencias
+                      </h4>
+                      <p className="mt-2 text-white/80 font-body text-sm sm:text-base">
+                        Aqui se resuelven los votos repetidos. Suban apuesta y definan ganador por
+                        tarjeta.
+                      </p>
+
+                      <div className="mt-4 rounded-xl border border-white/20 bg-white/5 p-3">
+                        <p className="text-xs font-mono uppercase tracking-[0.16em] text-white/65 mb-2">
+                          Resumen de votos
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(preferenceVotesByWoman).map(([womanName, voters]) => (
+                            <span
+                              key={`summary-${womanName}`}
+                              className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-xs text-white/85 font-body"
+                            >
+                              {womanName}: {voters.join(", ")}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {preferenceChallenges.length === 0 ? (
+                        <div className="mt-4 rounded-2xl border border-emerald-300/35 bg-emerald-500/10 p-4 text-center">
+                          <p className="font-display text-2xl text-emerald-100">
+                            Sin coincidencias, no hay duelo
+                          </p>
+                          <p className="mt-2 text-emerald-100/80 font-body text-sm">
+                            Cada uno voto distinto. Equipo libre de desafio.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="mt-4 space-y-3">
+                          {preferenceChallenges.map((challenge, challengeIdx) => (
+                            <div
+                              key={`challenge-${challenge.womanName}-${challengeIdx}`}
+                              className="rounded-2xl border border-amber-300/35 bg-amber-500/10 p-4"
+                            >
+                              <p className="text-xs font-mono uppercase tracking-[0.16em] text-amber-200/85">
+                                Coincidencia: {challenge.womanName}
+                              </p>
+                              <p className="mt-2 text-white/90 font-body text-sm">
+                                Contendientes: {challenge.contenders.join(" vs ")}
+                              </p>
+                              <div className="mt-3 flex flex-wrap items-center gap-2">
+                                <span className="rounded-full border border-white/20 bg-black/20 px-3 py-1 text-xs text-white/85 font-body">
+                                  Apuesta actual: {challenge.shotBid} shot
+                                  {challenge.shotBid > 1 ? "s" : ""}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => onIncreaseChallengeBid(challengeIdx)}
+                                  className="rounded-lg border border-fuchsia-300/45 bg-fuchsia-500/10 px-3 py-1 text-xs text-fuchsia-100 font-body hover:bg-fuchsia-500/20"
+                                >
+                                  Subir apuesta
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => onLockChallenge(challengeIdx)}
+                                  className="rounded-lg border border-miami-blue/45 bg-miami-blue/10 px-3 py-1 text-xs text-miami-blue font-body hover:bg-miami-blue/20"
+                                >
+                                  Te creo
+                                </button>
+                              </div>
+                              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {challenge.contenders.map((contender) => (
+                                  <button
+                                    key={`winner-${challenge.womanName}-${contender}`}
+                                    type="button"
+                                    onClick={() => onPickChallengeWinner(challengeIdx, contender)}
+                                    className={cn(
+                                      "rounded-xl border px-3 py-2 text-sm font-body",
+                                      challenge.winner === contender
+                                        ? "border-emerald-300/70 bg-emerald-500/25 text-emerald-100"
+                                        : "border-white/20 bg-white/5 text-white/80 hover:bg-white/10"
+                                    )}
+                                  >
+                                    Gana {contender}
+                                  </button>
+                                ))}
+                              </div>
+                              {challenge.isLocked && (
+                                <p className="mt-2 text-xs text-amber-100/90 font-body">
+                                  Duelo cerrado: alguien acepto el reto con {challenge.shotBid} shot
+                                  {challenge.shotBid > 1 ? "s" : ""}.
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setNoviaStage("preferences-voting")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNoviaStage("bonus-track")}
+                          disabled={!allPreferenceVotesDone}
+                          className={cn(
+                            "inline-flex items-center gap-2 rounded-xl border px-4 py-2 font-body",
+                            allPreferenceVotesDone
+                              ? "border-miami-blue/55 bg-miami-blue/15 text-miami-blue hover:bg-miami-blue/25"
+                              : "border-white/15 bg-white/10 text-white/40 cursor-not-allowed"
+                          )}
+                        >
+                          Ir a Bonus Track
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   )}
 
