@@ -60,7 +60,7 @@ type CiertoBiottiItem = {
   isTrue: boolean;
 };
 type MandiolaVote = "true" | "false" | null;
-type MandiolaPhase = "vote" | "result";
+type MandiolaPhase = "vote" | "result" | "summary";
 
 const ACTIVITIES: Activity[] = [
   {
@@ -264,9 +264,16 @@ export default function ActivitiesSection() {
   const [mandiolaResolvedRounds, setMandiolaResolvedRounds] = useState<boolean[]>(
     () => CIERTO_BIOTTI_ITEMS.map(() => false)
   );
-  const [mandiolaGiftedByPlayer, setMandiolaGiftedByPlayer] = useState<boolean[][]>(
-    () => CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => false))
-  );
+  const [mandiolaGiftRecipientByPlayer, setMandiolaGiftRecipientByPlayer] = useState<
+    (string | null)[][]
+  >(() => CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => null)));
+  const [mandiolaGiftPicker, setMandiolaGiftPicker] = useState<{
+    roundIdx: number;
+    giverIdx: number;
+  } | null>(null);
+  const [mandiolaShotAnnouncementByRound, setMandiolaShotAnnouncementByRound] = useState<
+    (string | null)[]
+  >(() => CIERTO_BIOTTI_ITEMS.map(() => null));
   const [noviaStage, setNoviaStage] = useState<NoviaGameStage>("cover");
 
   const INTRO_VIDEO_URL = "/videos/vale/Introduccion.mp4";
@@ -296,8 +303,47 @@ export default function ActivitiesSection() {
   const overallQuestionsCount = NOVIA_QUESTIONS.length + BONUS_TRACKS.length;
   const overallScore = totalScore + bonusScore;
   const overallAccuracy = (overallScore / overallQuestionsCount) * 100;
+  const finalOutcome =
+    overallAccuracy > 75
+      ? {
+          headline: "BIOTTI CAMPEÓN DEL JUEGO",
+          badge: "Victoria del novio",
+          summary: "Biotti superó el 75%: ganó el desafío.",
+          consequence: "Regla: todos toman al seco.",
+          accentClass:
+            "border-emerald-300/45 bg-gradient-to-r from-emerald-500/20 via-emerald-400/10 to-cyan-400/10 text-emerald-100",
+          badgeClass: "text-emerald-200",
+        }
+      : overallAccuracy >= 60
+        ? {
+            headline: "EMPATE ÉPICO",
+            badge: "Empate técnico",
+            summary: "Biotti quedó entre 60% y 75%.",
+            consequence:
+              'Regla: novio y todos toman "media" al seco.',
+            accentClass:
+              "border-amber-300/45 bg-gradient-to-r from-amber-500/20 via-orange-400/10 to-yellow-300/10 text-amber-100",
+            badgeClass: "text-amber-200",
+          }
+        : {
+            headline: "BIOTTI PERDIÓ EL DUELO",
+            badge: "Novio perdedor",
+            summary: "Biotti quedó bajo 60%.",
+            consequence: "Regla: el novio mata el vaso al seco.",
+            accentClass:
+              "border-rose-300/45 bg-gradient-to-r from-rose-500/20 via-red-500/10 to-fuchsia-500/10 text-rose-100",
+            badgeClass: "text-rose-200",
+          };
   const currentMandiolaItem = CIERTO_BIOTTI_ITEMS[mandiolaQuestionIdx];
   const currentMandiolaVotes = mandiolaVotes[mandiolaQuestionIdx] ?? [];
+  const currentMandiolaGifts = mandiolaGiftRecipientByPlayer[mandiolaQuestionIdx] ?? [];
+  const currentMandiolaShotAnnouncement =
+    mandiolaShotAnnouncementByRound[mandiolaQuestionIdx] ?? null;
+  const mandiolaGiftPickerGiverName =
+    mandiolaGiftPicker ? MANDIOLA_PLAYERS[mandiolaGiftPicker.giverIdx] : null;
+  const mandiolaGiftPickerRecipientOptions = mandiolaGiftPickerGiverName
+    ? MANDIOLA_PLAYERS.filter((player) => player !== mandiolaGiftPickerGiverName)
+    : [];
   const allMandiolaVotesDone = currentMandiolaVotes.every((vote) => vote !== null);
   const isFirstMandiolaQuestion = mandiolaQuestionIdx === 0;
   const isLastMandiolaQuestion = mandiolaQuestionIdx === CIERTO_BIOTTI_ITEMS.length - 1;
@@ -328,11 +374,49 @@ export default function ActivitiesSection() {
     ).length;
     return acc + losersInRound;
   }, 0);
-  const mandiolaGiftedCount = mandiolaGiftedByPlayer.reduce(
-    (acc, byRound) => acc + byRound.filter(Boolean).length,
+  const mandiolaGiftedCount = mandiolaGiftRecipientByPlayer.reduce(
+    (acc, byRound) => acc + byRound.filter((recipient) => Boolean(recipient)).length,
     0
   );
   const mandiolaAvailableGiftShots = Math.max(0, mandiolaCorrectCount - mandiolaGiftedCount);
+  const mandiolaPlayerStats = useMemo(() => {
+    const stats = MANDIOLA_PLAYERS.map((playerName, playerIdx) => {
+      let correct = 0;
+      let wrong = 0;
+      let gifted = 0;
+      let received = 0;
+
+      CIERTO_BIOTTI_ITEMS.forEach((item, roundIdx) => {
+        if (!mandiolaResolvedRounds[roundIdx]) return;
+        const vote = mandiolaVotes[roundIdx]?.[playerIdx];
+        if (vote) {
+          const didWin = item.isTrue ? vote === "true" : vote === "false";
+          if (didWin) correct += 1;
+          else wrong += 1;
+        }
+        const giftedTo = mandiolaGiftRecipientByPlayer[roundIdx]?.[playerIdx];
+        if (giftedTo) gifted += 1;
+        const receivedThisRound = mandiolaGiftRecipientByPlayer[roundIdx]?.filter(
+          (name) => name === playerName
+        ).length;
+        received += receivedThisRound ?? 0;
+      });
+
+      const shotsToTake = wrong + received;
+      const score = correct * 2 - wrong;
+      return { playerName, correct, wrong, gifted, received, shotsToTake, score };
+    });
+
+    return stats.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (b.correct !== a.correct) return b.correct - a.correct;
+      return a.wrong - b.wrong;
+    });
+  }, [mandiolaResolvedRounds, mandiolaVotes, mandiolaGiftRecipientByPlayer]);
+  const mandiolaTotalShotsToTake = mandiolaPlayerStats.reduce(
+    (acc, player) => acc + player.shotsToTake,
+    0
+  );
 
   function closePasswordModal() {
     setPasswordModalFor(null);
@@ -355,7 +439,9 @@ export default function ActivitiesSection() {
     setMandiolaPhase("vote");
     setMandiolaVotes(CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => null)));
     setMandiolaResolvedRounds(CIERTO_BIOTTI_ITEMS.map(() => false));
-    setMandiolaGiftedByPlayer(CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => false)));
+    setMandiolaGiftRecipientByPlayer(CIERTO_BIOTTI_ITEMS.map(() => MANDIOLA_PLAYERS.map(() => null)));
+    setMandiolaShotAnnouncementByRound(CIERTO_BIOTTI_ITEMS.map(() => null));
+    setMandiolaGiftPicker(null);
   }
 
   function resetActivityState(activityId: string) {
@@ -380,6 +466,7 @@ export default function ActivitiesSection() {
     if (activeActivityId) {
       setActivitySessionExists((previous) => ({ ...previous, [activeActivityId]: true }));
     }
+    setMandiolaGiftPicker(null);
     setActiveActivityId(null);
   }
 
@@ -456,13 +543,6 @@ export default function ActivitiesSection() {
     setBonusStep("question-video");
   }
 
-  function getFinalBiottiTitle() {
-    if (overallAccuracy >= 85) return "BIOTTI ORÁCULO SUPREMO";
-    if (overallAccuracy >= 65) return "BIOTTI MODO ADIVINO";
-    if (overallAccuracy >= 45) return "BIOTTI EN PARTIDA PELEADA";
-    return "BIOTTI NECESITA REFUERZOS";
-  }
-
   function markMandiolaVote(playerIdx: number, vote: Exclude<MandiolaVote, null>) {
     setMandiolaVotes((previous) => {
       const next = previous.map((roundVotes) => [...roundVotes]);
@@ -482,6 +562,11 @@ export default function ActivitiesSection() {
   }
 
   function onPreviousMandiolaStage() {
+    if (mandiolaPhase === "summary") {
+      setMandiolaQuestionIdx(CIERTO_BIOTTI_ITEMS.length - 1);
+      setMandiolaPhase("result");
+      return;
+    }
     if (mandiolaPhase === "result") {
       setMandiolaPhase("vote");
       return;
@@ -496,24 +581,41 @@ export default function ActivitiesSection() {
       onShowMandiolaVerdict();
       return;
     }
+    if (mandiolaPhase === "result" && isLastMandiolaQuestion) {
+      setMandiolaPhase("summary");
+      return;
+    }
     if (isLastMandiolaQuestion) return;
     setMandiolaQuestionIdx((prev) => prev + 1);
     setMandiolaPhase("vote");
   }
 
-  function toggleMandiolaGift(playerIdx: number) {
+  function onOpenMandiolaGiftPicker(playerIdx: number) {
     if (mandiolaPhase !== "result") return;
     const playerName = MANDIOLA_PLAYERS[playerIdx];
     if (!currentMandiolaWinners.includes(playerName)) return;
+    const existingRecipient = currentMandiolaGifts[playerIdx];
+    if (!existingRecipient && mandiolaAvailableGiftShots <= 0) return;
+    setMandiolaGiftPicker({ roundIdx: mandiolaQuestionIdx, giverIdx: playerIdx });
+  }
 
-    const wasGifted = mandiolaGiftedByPlayer[mandiolaQuestionIdx]?.[playerIdx];
-    if (!wasGifted && mandiolaAvailableGiftShots <= 0) return;
+  function onChooseMandiolaGiftRecipient(recipientName: string) {
+    if (!mandiolaGiftPicker) return;
+    const { roundIdx, giverIdx } = mandiolaGiftPicker;
+    const existingRecipient = mandiolaGiftRecipientByPlayer[roundIdx]?.[giverIdx];
+    if (!existingRecipient && mandiolaAvailableGiftShots <= 0) return;
 
-    setMandiolaGiftedByPlayer((previous) => {
+    setMandiolaGiftRecipientByPlayer((previous) => {
       const next = previous.map((roundGifts) => [...roundGifts]);
-      next[mandiolaQuestionIdx][playerIdx] = !Boolean(wasGifted);
+      next[roundIdx][giverIdx] = recipientName;
       return next;
     });
+    setMandiolaShotAnnouncementByRound((previous) => {
+      const next = [...previous];
+      next[roundIdx] = `${recipientName} TOMA UN SHOT`;
+      return next;
+    });
+    setMandiolaGiftPicker(null);
   }
 
   return (
@@ -754,7 +856,7 @@ export default function ActivitiesSection() {
                     </div>
                     <div className="rounded-xl border border-amber-300/35 bg-amber-500/10 px-3 py-2 text-center">
                       <p className="text-[10px] uppercase tracking-wider font-mono text-amber-200/85">Shots a tomar</p>
-                      <p className="font-display text-xl text-amber-200">{mandiolaWrongCount}</p>
+                      <p className="font-display text-xl text-amber-200">{mandiolaTotalShotsToTake}</p>
                     </div>
                     <div className="rounded-xl border border-miami-blue/35 bg-miami-blue/10 px-3 py-2 text-center">
                       <p className="text-[10px] uppercase tracking-wider font-mono text-miami-blue/85">Disponibles</p>
@@ -767,15 +869,19 @@ export default function ActivitiesSection() {
                   </div>
 
                   <article className="rounded-2xl border border-white/20 bg-white/5 p-4 sm:p-5">
-                    <div className="flex items-center justify-between gap-3">
-                      <h4 className="font-display text-2xl text-white">{currentMandiolaItem.title}</h4>
-                      <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-mono uppercase tracking-[0.14em] text-white/70">
-                        Pregunta {mandiolaQuestionIdx + 1} / {CIERTO_BIOTTI_ITEMS.length}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-white/85 font-body text-sm leading-relaxed">
-                      {currentMandiolaItem.story}
-                    </p>
+                    {mandiolaPhase !== "summary" && (
+                      <>
+                        <div className="flex items-center justify-between gap-3">
+                          <h4 className="font-display text-2xl text-white">{currentMandiolaItem.title}</h4>
+                          <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-mono uppercase tracking-[0.14em] text-white/70">
+                            Pregunta {mandiolaQuestionIdx + 1} / {CIERTO_BIOTTI_ITEMS.length}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-white/85 font-body text-sm leading-relaxed">
+                          {currentMandiolaItem.story}
+                        </p>
+                      </>
+                    )}
 
                     {mandiolaPhase === "vote" ? (
                       <>
@@ -837,7 +943,7 @@ export default function ActivitiesSection() {
                           </div>
                         )}
                       </>
-                    ) : (
+                    ) : mandiolaPhase === "result" ? (
                       <>
                         <p className="mt-4 text-[11px] font-mono uppercase tracking-[0.16em] text-fuchsia-200/90">
                           Etapa 2: Veredicto y ganadores
@@ -856,14 +962,29 @@ export default function ActivitiesSection() {
                                   Nadie acertó.
                                 </span>
                               ) : (
-                                currentMandiolaWinners.map((player) => (
-                                  <span
-                                    key={player}
-                                    className="rounded-full border border-emerald-200/45 bg-emerald-500/20 px-2.5 py-1 text-xs text-emerald-100 font-body"
-                                  >
-                                    {player}
-                                  </span>
-                                ))
+                                currentMandiolaWinners.map((player) => {
+                                  const playerIdx = MANDIOLA_PLAYERS.indexOf(player);
+                                  const recipient = currentMandiolaGifts[playerIdx];
+                                  const canGift =
+                                    Boolean(recipient) || mandiolaAvailableGiftShots > 0;
+                                  return (
+                                    <button
+                                      key={player}
+                                      type="button"
+                                      onClick={() => onOpenMandiolaGiftPicker(playerIdx)}
+                                      disabled={!canGift}
+                                      className={cn(
+                                        "rounded-full border px-2.5 py-1 text-xs font-body transition-colors",
+                                        recipient
+                                          ? "border-emerald-200/70 bg-emerald-500/35 text-emerald-50"
+                                          : "border-emerald-200/45 bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30",
+                                        !canGift && "opacity-45 cursor-not-allowed"
+                                      )}
+                                    >
+                                      {recipient ? `${player} → ${recipient}` : player}
+                                    </button>
+                                  );
+                                })
                               )}
                             </div>
                           </div>
@@ -887,38 +1008,128 @@ export default function ActivitiesSection() {
                             </div>
                           </div>
                         </div>
-
-                        <div className="mt-3 rounded-xl border border-fuchsia-300/30 bg-fuchsia-500/5 p-3">
-                          <p className="text-[10px] uppercase tracking-wider font-mono text-fuchsia-200/85 mb-2">
-                            Regalar shot (solo ganadores)
+                        {currentMandiolaShotAnnouncement && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mt-3 rounded-2xl border border-amber-300/35 bg-gradient-to-r from-amber-500/15 to-orange-500/10 p-4 sm:p-6 text-center"
+                          >
+                            <p className="text-xs font-mono uppercase tracking-[0.2em] text-amber-200/85">
+                              Shot asignado
+                            </p>
+                            <h4 className="mt-2 font-display text-3xl sm:text-4xl text-amber-100">
+                              {currentMandiolaShotAnnouncement}
+                            </h4>
+                          </motion.div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="rounded-2xl border border-miami-blue/30 bg-miami-blue/10 p-4 sm:p-5">
+                          <p className="text-xs font-mono uppercase tracking-[0.2em] text-miami-blue">
+                            Cierre final de la trivia
                           </p>
-                          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                            {MANDIOLA_PLAYERS.map((player, playerIdx) => {
-                              const isWinner = currentMandiolaWinners.includes(player);
-                              const gifted = Boolean(
-                                mandiolaGiftedByPlayer[mandiolaQuestionIdx]?.[playerIdx]
-                              );
-                              const disabled = !isWinner && !gifted;
-                              return (
-                                <button
-                                  key={`${player}-gift`}
-                                  type="button"
-                                  onClick={() => toggleMandiolaGift(playerIdx)}
-                                  disabled={disabled}
+                          <h4 className="mt-2 font-display text-3xl sm:text-4xl text-white">
+                            Ranking + castigos del equipo
+                          </h4>
+                          <p className="mt-2 text-sm sm:text-base text-white/75 font-body">
+                            Resultado completo de la Actividad Mandiola con puntaje y shots por persona.
+                          </p>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <div className="rounded-xl border border-emerald-300/35 bg-emerald-500/10 px-3 py-2 text-center">
+                            <p className="text-[10px] uppercase tracking-wider font-mono text-emerald-200/85">
+                              Aciertos
+                            </p>
+                            <p className="font-display text-xl text-emerald-200">{mandiolaCorrectCount}</p>
+                          </div>
+                          <div className="rounded-xl border border-rose-300/35 bg-rose-500/10 px-3 py-2 text-center">
+                            <p className="text-[10px] uppercase tracking-wider font-mono text-rose-200/85">
+                              Errores
+                            </p>
+                            <p className="font-display text-xl text-rose-200">{mandiolaWrongCount}</p>
+                          </div>
+                          <div className="rounded-xl border border-fuchsia-300/35 bg-fuchsia-500/10 px-3 py-2 text-center">
+                            <p className="text-[10px] uppercase tracking-wider font-mono text-fuchsia-200/85">
+                              Shots regalados
+                            </p>
+                            <p className="font-display text-xl text-fuchsia-200">{mandiolaGiftedCount}</p>
+                          </div>
+                          <div className="rounded-xl border border-amber-300/35 bg-amber-500/10 px-3 py-2 text-center">
+                            <p className="text-[10px] uppercase tracking-wider font-mono text-amber-200/85">
+                              Shots totales a tomar
+                            </p>
+                            <p className="font-display text-xl text-amber-200">{mandiolaTotalShotsToTake}</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 rounded-2xl border border-white/20 bg-white/5 p-3 sm:p-4">
+                          <p className="text-xs font-mono uppercase tracking-[0.16em] text-white/65 mb-3">
+                            Ranking por puntaje
+                          </p>
+                          <div className="space-y-2">
+                            {mandiolaPlayerStats.map((player, index) => (
+                              <div
+                                key={`rank-${player.playerName}`}
+                                className="rounded-xl border border-white/15 bg-black/20 px-3 py-2 flex items-center justify-between gap-3"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={cn(
+                                      "inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-mono",
+                                      index === 0
+                                        ? "bg-amber-400/30 text-amber-100 border border-amber-300/50"
+                                        : index === 1
+                                          ? "bg-slate-200/20 text-slate-100 border border-slate-200/40"
+                                          : index === 2
+                                            ? "bg-orange-400/25 text-orange-100 border border-orange-300/45"
+                                            : "bg-white/10 text-white/75 border border-white/20"
+                                    )}
+                                  >
+                                    {index + 1}
+                                  </span>
+                                  <p className="text-white font-body">{player.playerName}</p>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs font-body">
+                                  <span className="rounded-full border border-emerald-300/35 bg-emerald-500/10 px-2 py-0.5 text-emerald-200">
+                                    +{player.correct}
+                                  </span>
+                                  <span className="rounded-full border border-rose-300/35 bg-rose-500/10 px-2 py-0.5 text-rose-200">
+                                    -{player.wrong}
+                                  </span>
+                                  <span className="rounded-full border border-miami-blue/35 bg-miami-blue/10 px-2 py-0.5 text-miami-blue">
+                                    Pts {player.score}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="mt-4 rounded-2xl border border-white/20 bg-black/25 p-3 sm:p-4">
+                          <p className="text-xs font-mono uppercase tracking-[0.16em] text-white/65 mb-3">
+                            Qué toma cada uno
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {mandiolaPlayerStats.map((player) => (
+                              <div
+                                key={`shots-${player.playerName}`}
+                                className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 flex items-center justify-between gap-2"
+                              >
+                                <p className="text-white/90 font-body text-sm">{player.playerName}</p>
+                                <p
                                   className={cn(
-                                    "inline-flex h-9 items-center justify-center rounded-lg border px-2 text-xs font-body transition-colors",
-                                    gifted
-                                      ? "border-fuchsia-300/80 bg-fuchsia-500/25 text-fuchsia-100"
-                                      : "border-white/20 bg-white/5 text-white/75 hover:bg-white/10",
-                                    disabled && "opacity-40 cursor-not-allowed"
+                                    "text-sm font-body",
+                                    player.shotsToTake > 0 ? "text-rose-200" : "text-emerald-200"
                                   )}
-                                  aria-label={`Regalar shot ${player}`}
-                                  title={player}
                                 >
-                                  <PartyPopper className="h-4 w-4" />
-                                </button>
-                              );
-                            })}
+                                  {player.shotsToTake > 0
+                                    ? `${player.shotsToTake} shot${player.shotsToTake > 1 ? "s" : ""}`
+                                    : "Libre"}
+                                </p>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </>
@@ -943,18 +1154,22 @@ export default function ActivitiesSection() {
                         onClick={onNextMandiolaStage}
                         disabled={
                           (mandiolaPhase === "vote" && !allMandiolaVotesDone) ||
-                          (mandiolaPhase === "result" && isLastMandiolaQuestion)
+                          mandiolaPhase === "summary"
                         }
                         className={cn(
                           "inline-flex items-center gap-2 rounded-xl border px-4 py-2 font-body",
                           (mandiolaPhase === "vote" && !allMandiolaVotesDone) ||
-                            (mandiolaPhase === "result" && isLastMandiolaQuestion)
+                            mandiolaPhase === "summary"
                             ? "border-white/15 bg-white/10 text-white/40 cursor-not-allowed"
                             : "border-miami-blue/55 bg-miami-blue/15 text-miami-blue hover:bg-miami-blue/25"
                         )}
                       >
                         {mandiolaPhase === "vote"
                           ? "Siguiente"
+                          : mandiolaPhase === "result" && isLastMandiolaQuestion
+                            ? "Ver cierre final"
+                          : mandiolaPhase === "summary"
+                            ? "Cierre completado"
                           : isLastMandiolaQuestion
                             ? "Trivia completa"
                             : "Siguiente"}
@@ -1583,18 +1798,35 @@ export default function ActivitiesSection() {
                     <motion.div
                       initial={{ opacity: 0, scale: 0.96 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="rounded-3xl border border-fuchsia-300/35 bg-gradient-to-br from-violet-900/65 via-sky-950/70 to-black/75 p-5 sm:p-7 shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
+                      className={cn(
+                        "rounded-3xl border bg-gradient-to-br p-5 sm:p-7 shadow-[0_24px_80px_rgba(0,0,0,0.45)]",
+                        overallAccuracy > 75 &&
+                          "border-emerald-300/35 from-emerald-900/45 via-sky-950/70 to-black/75",
+                        overallAccuracy >= 60 &&
+                          overallAccuracy <= 75 &&
+                          "border-amber-300/35 from-amber-900/45 via-sky-950/70 to-black/75",
+                        overallAccuracy < 60 &&
+                          "border-rose-300/35 from-rose-900/45 via-sky-950/70 to-black/75"
+                      )}
                     >
                       <div className="rounded-2xl border border-white/20 bg-white/5 p-4 sm:p-5">
-                        <p className="text-xs font-mono uppercase tracking-[0.2em] text-miami-blue">
-                          Cierre oficial del juego
+                        <p className={cn("text-xs font-mono uppercase tracking-[0.2em]", finalOutcome.badgeClass)}>
+                          {finalOutcome.badge}
                         </p>
                         <h4 className="mt-2 font-display text-3xl sm:text-5xl text-white">
-                          {getFinalBiottiTitle()}
+                          {finalOutcome.headline}
                         </h4>
                         <p className="mt-2 text-white/75 font-body text-sm sm:text-base">
-                          Reporte final ultra pro del rendimiento de Biotti entre preguntas + bonus.
+                          Resultado oficial según precisión final del juego.
                         </p>
+                      </div>
+
+                      <div className={cn("mt-4 rounded-2xl border p-4 sm:p-5", finalOutcome.accentClass)}>
+                        <p className="text-[11px] font-mono uppercase tracking-[0.18em] opacity-90">
+                          Veredicto final
+                        </p>
+                        <p className="mt-1 font-display text-2xl sm:text-3xl">{finalOutcome.summary}</p>
+                        <p className="mt-2 font-body text-sm sm:text-base">{finalOutcome.consequence}</p>
                       </div>
 
                       <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
@@ -1631,13 +1863,13 @@ export default function ActivitiesSection() {
 
                       <div className="mt-4 flex flex-wrap gap-2">
                         <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-white/85 font-body">
-                          Modo fiesta: {overallAccuracy >= 70 ? "controlado" : "caótico"}
+                          Precisión final: {overallAccuracy.toFixed(0)}%
                         </span>
                         <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-white/85 font-body">
                           Shots estimados: {overallNoCount}
                         </span>
                         <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-white/85 font-body">
-                          Nivel de drama: {overallNoCount >= 5 ? "alto" : "moderado"}
+                          Estado: {overallAccuracy > 75 ? "ganó" : overallAccuracy >= 60 ? "empate" : "perdió"}
                         </span>
                       </div>
 
@@ -1666,6 +1898,53 @@ export default function ActivitiesSection() {
 
                 </>
               )}
+
+              <AnimatePresence>
+                {mandiolaGiftPicker && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[1120] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"
+                    onClick={() => setMandiolaGiftPicker(null)}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, y: 16, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                      onClick={(event) => event.stopPropagation()}
+                      className="w-full max-w-md rounded-2xl border border-white/25 glass-card p-6"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="font-display text-2xl text-white">¿A quién le regalas?</h3>
+                        <button
+                          type="button"
+                          onClick={() => setMandiolaGiftPicker(null)}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-black/30 text-white/80 hover:bg-black/50"
+                          aria-label="Cerrar modal de regalo de shot"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <p className="mt-3 text-white/75 font-body text-sm">
+                        {mandiolaGiftPickerGiverName} elige quién toma un shot.
+                      </p>
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        {mandiolaGiftPickerRecipientOptions.map((player) => (
+                          <button
+                            key={`gift-recipient-${player}`}
+                            type="button"
+                            onClick={() => onChooseMandiolaGiftRecipient(player)}
+                            className="rounded-xl border border-fuchsia-300/40 bg-fuchsia-500/10 px-3 py-2 text-sm text-fuchsia-100 font-body hover:bg-fuchsia-500/20 transition-colors"
+                          >
+                            {player}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           </motion.div>
         )}
