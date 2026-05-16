@@ -51,6 +51,11 @@ type BonusTrack = {
 
 type PreferenceWoman = {
   name: string;
+  cara: string;
+  culo: string;
+  tetas: string;
+  promedio: string;
+  descripcion: string;
 };
 
 type PreferenceChallenge = {
@@ -319,19 +324,110 @@ const BONUS_TRACKS: BonusTrack[] = [
 ];
 
 const PREFERENCE_WOMEN: PreferenceWoman[] = [
-  { name: "Carla" },
-  { name: "Paula" },
-  { name: "Maria" },
-  { name: "Diana" },
-  { name: "Nerea" },
-  { name: "Lola" },
-  { name: "Andrea" },
-  { name: "Irene" },
-  { name: "Laura" },
-  { name: "Lucia" },
-  { name: "Ena" },
-  { name: "Aina" },
-  { name: "Ana" },
+  {
+    name: "Carla",
+    cara: "9",
+    culo: "10",
+    tetas: "5",
+    promedio: "8.0",
+    descripcion: "Es media comunista",
+  },
+  {
+    name: "Paula",
+    cara: "7",
+    culo: "6",
+    tetas: "7",
+    promedio: "6.67",
+    descripcion: "Normal",
+  },
+  {
+    name: "Maria",
+    cara: "2",
+    culo: "8",
+    tetas: "8",
+    promedio: "6.0",
+    descripcion: "Muy caliente",
+  },
+  {
+    name: "Diana",
+    cara: "6",
+    culo: "10",
+    tetas: "5",
+    promedio: "7.0",
+    descripcion: "Es influencer",
+  },
+  {
+    name: "Nerea",
+    cara: "1",
+    culo: "9",
+    tetas: "9",
+    promedio: "6.33",
+    descripcion: "La más buena onda",
+  },
+  {
+    name: "Lola",
+    cara: "10",
+    culo: "5",
+    tetas: "5",
+    promedio: "6.67",
+    descripcion: "Muy tierna",
+  },
+  {
+    name: "Andrea",
+    cara: "8",
+    culo: "8",
+    tetas: "8",
+    promedio: "8.0",
+    descripcion: "Muy carretera y loca",
+  },
+  {
+    name: "Irene",
+    cara: "3",
+    culo: "3",
+    tetas: "10",
+    promedio: "5.33",
+    descripcion: "Cocina rico y es infomana",
+  },
+  {
+    name: "Laura",
+    cara: "5",
+    culo: "7",
+    tetas: "7",
+    promedio: "6.33",
+    descripcion: "Tiene la mejor familia y amigas",
+  },
+  {
+    name: "Lucia",
+    cara: "1",
+    culo: "1",
+    tetas: "1",
+    promedio: "1.0",
+    descripcion: "Es millonaria y te ama incondicionalmente",
+  },
+  {
+    name: "Ena",
+    cara: "5",
+    culo: "8",
+    tetas: "9",
+    promedio: "7.33",
+    descripcion: "Monja y tímida",
+  },
+  {
+    name: "Aina",
+    cara: "4",
+    culo: "??",
+    tetas: "4.5 aprox",
+    promedio: "incompleto",
+    descripcion: "Sin descripción",
+  },
+  {
+    name: "Ana",
+    cara: "4.5",
+    culo: "4.5",
+    tetas: "4.5",
+    promedio: "4.5",
+    descripcion: "Es con quien más tienes química",
+  },
 ];
 
 const ORACION_TEAM_LINES: OracionLine[] = [
@@ -1874,6 +1970,54 @@ export default function ActivitiesSection() {
                             <p className="text-white/85 font-body text-sm sm:text-base">
                               {currentPreferenceVoterName} vota su preferida.
                             </p>
+                          </div>
+                          <div className="mt-3 overflow-x-auto rounded-2xl border border-white/20 bg-black/25">
+                            <table className="min-w-[760px] w-full text-left">
+                              <thead>
+                                <tr className="border-b border-white/20 bg-white/10">
+                                  <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
+                                    Nombre
+                                  </th>
+                                  <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
+                                    Cara
+                                  </th>
+                                  <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
+                                    Culo
+                                  </th>
+                                  <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
+                                    Tetas
+                                  </th>
+                                  <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
+                                    Promedio
+                                  </th>
+                                  <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
+                                    Descripción
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {PREFERENCE_WOMEN.map((woman) => (
+                                  <tr
+                                    key={`table-${woman.name}`}
+                                    className={cn(
+                                      "border-b border-white/10",
+                                      currentPreferenceVote === woman.name
+                                        ? "bg-fuchsia-500/15"
+                                        : "bg-transparent"
+                                    )}
+                                  >
+                                    <td className="px-3 py-2 text-sm text-white font-semibold">
+                                      {woman.name}
+                                    </td>
+                                    <td className="px-3 py-2 text-sm text-white/85">{woman.cara}</td>
+                                    <td className="px-3 py-2 text-sm text-white/85">{woman.culo}</td>
+                                    <td className="px-3 py-2 text-sm text-white/85">{woman.tetas}</td>
+                                    <td className="px-3 py-2 text-sm text-white/85">{woman.promedio}</td>
+                                    <td className="px-3 py-2 text-sm text-white/80">{woman.descripcion}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
                           </div>
                           <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
                             {PREFERENCE_WOMEN.map((woman) => (
