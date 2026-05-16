@@ -106,11 +106,16 @@ const ITINERARY_DAYS: ItineraryDay[] = [
           "Hora libre para duchas, descanso y preparación de salida nocturna.",
       },
       {
-        time: "22:00 - 23:00",
-        activity: "Comida y cierre del día",
+        time: "21:30 - 23:00",
+        activity: "PRE Y ACTIVIDAD NOVIA",
         description:
-          "Cena liviana para cerrar la jornada y dejar al equipo listo para el viernes.",
-        isMeal: true,
+          "Bloque previo y dinámica principal de la noche con foco en la actividad de la novia.",
+      },
+      {
+        time: "23:00 - cierre del día",
+        activity: "Algún bar de la ciudad",
+        description:
+          "Salida nocturna libre para cerrar la jornada en bar de la ciudad según energía del grupo.",
       },
     ],
   },

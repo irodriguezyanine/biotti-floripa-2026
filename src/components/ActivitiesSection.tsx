@@ -45,6 +45,12 @@ type NoviaGameStage =
 
 type QuestionStep = "question" | "respond" | "video" | "result";
 type ResultMark = "yes" | "so-so" | "no" | null;
+type CiertoBiottiItem = {
+  title: string;
+  story: string;
+  verdict: string;
+};
+type MandiolaRoundResult = "correct" | "wrong" | null;
 
 const ACTIVITIES: Activity[] = [
   {
@@ -67,7 +73,7 @@ const ACTIVITIES: Activity[] = [
     id: "actividad-mandiola",
     title: "Actividad Mandiola",
     subtitle: "Bloque sorpresa",
-    password: "CrewPass26",
+    password: "FranSoto123",
     icon: Trophy,
     accentClass: "text-miami-blue",
   },
@@ -86,6 +92,39 @@ const ACTIVITIES: Activity[] = [
     password: "Bonus2026",
     icon: Sparkles,
     accentClass: "text-fuchsia-300",
+  },
+];
+
+const CIERTO_BIOTTI_ITEMS: CiertoBiottiItem[] = [
+  {
+    title: "1. El Emprendimiento Escolar",
+    story:
+      'En el San Ignacio El Bosque, a Sebastián lo pillaron en los baños vendiendo respuestas de pruebas de matemáticas. Decía que ese baño era "la oficina de Sebastián Biotti".',
+    verdict: "BIOTTI-MENTIRA (Nunca pasó).",
+  },
+  {
+    title: "2. El Impulso Vandálico",
+    story:
+      "En la universidad, volviendo de un carrete, a Biotti le dio por robarse un basurero de la vía pública a pulso y llevárselo a casa. Se sacó la csm caminando con el basurero, pero llegó a la casa con el basurero municipal.",
+    verdict: "CIERTA (Es real).",
+  },
+  {
+    title: "3. El Accidente Misterioso",
+    story:
+      "Durante un carrete, se cayó de un árbol por estar borracho y bajo los efectos de sustancias. Para tapar la vergüenza, le inventó a sus amigos que fue un accidente casual.",
+    verdict: "CIERTA (Es real).",
+  },
+  {
+    title: "4. El Secreto Universitario",
+    story:
+      'Sebastián, alias "El Lula", recuerda a María José como la mejor polola de toda su época universitaria.',
+    verdict: "CIERTA (Es real).",
+  },
+  {
+    title: "5. Desgracia Romántica",
+    story:
+      '"El Lula" entró a la casa de una mina que se quería comer. En plena cita tuvo que ir al baño a hacer "a cagar", la maniobra falló y la mina lo pilló.',
+    verdict: "BIOTTI-MENTIRA (Esta es la trampa).",
   },
 ];
 
@@ -165,6 +204,15 @@ export default function ActivitiesSection() {
   const [questionResults, setQuestionResults] = useState<ResultMark[]>(
     () => NOVIA_QUESTIONS.map(() => null)
   );
+  const [showMandiolaVerdict, setShowMandiolaVerdict] = useState<boolean[]>(
+    () => CIERTO_BIOTTI_ITEMS.map(() => false)
+  );
+  const [mandiolaResults, setMandiolaResults] = useState<MandiolaRoundResult[]>(
+    () => CIERTO_BIOTTI_ITEMS.map(() => null)
+  );
+  const [mandiolaGiftedByRound, setMandiolaGiftedByRound] = useState<boolean[]>(
+    () => CIERTO_BIOTTI_ITEMS.map(() => false)
+  );
   const [noviaStage, setNoviaStage] = useState<NoviaGameStage>("cover");
 
   const INTRO_VIDEO_URL = "/videos/vale/Introduccion.mp4";
@@ -183,6 +231,10 @@ export default function ActivitiesSection() {
   const soSoCount = questionResults.filter((item) => item === "so-so").length;
   const noCount = questionResults.filter((item) => item === "no").length;
   const totalScore = yesCount + soSoCount * 0.5;
+  const mandiolaCorrectCount = mandiolaResults.filter((item) => item === "correct").length;
+  const mandiolaWrongCount = mandiolaResults.filter((item) => item === "wrong").length;
+  const mandiolaGiftedCount = mandiolaGiftedByRound.filter(Boolean).length;
+  const mandiolaAvailableGiftShots = Math.max(0, mandiolaWrongCount - mandiolaGiftedCount);
 
   function closePasswordModal() {
     setPasswordModalFor(null);
@@ -195,6 +247,9 @@ export default function ActivitiesSection() {
     setCurrentQuestionIdx(0);
     setQuestionStep("question");
     setQuestionResults(NOVIA_QUESTIONS.map(() => null));
+    setShowMandiolaVerdict(CIERTO_BIOTTI_ITEMS.map(() => false));
+    setMandiolaResults(CIERTO_BIOTTI_ITEMS.map(() => null));
+    setMandiolaGiftedByRound(CIERTO_BIOTTI_ITEMS.map(() => false));
     setNoviaStage("cover");
   }
 
@@ -206,6 +261,11 @@ export default function ActivitiesSection() {
         setQuestionStep("question");
         setQuestionResults(NOVIA_QUESTIONS.map(() => null));
         setNoviaStage("cover");
+      }
+      if (activityId === "actividad-mandiola") {
+        setShowMandiolaVerdict(CIERTO_BIOTTI_ITEMS.map(() => false));
+        setMandiolaResults(CIERTO_BIOTTI_ITEMS.map(() => null));
+        setMandiolaGiftedByRound(CIERTO_BIOTTI_ITEMS.map(() => false));
       }
       return;
     }
@@ -226,6 +286,11 @@ export default function ActivitiesSection() {
         setQuestionStep("question");
         setQuestionResults(NOVIA_QUESTIONS.map(() => null));
         setNoviaStage("cover");
+      }
+      if (activity.id === "actividad-mandiola") {
+        setShowMandiolaVerdict(CIERTO_BIOTTI_ITEMS.map(() => false));
+        setMandiolaResults(CIERTO_BIOTTI_ITEMS.map(() => null));
+        setMandiolaGiftedByRound(CIERTO_BIOTTI_ITEMS.map(() => false));
       }
       closePasswordModal();
       return;
@@ -392,7 +457,155 @@ export default function ActivitiesSection() {
                 <X className="h-4 w-4" />
               </button>
 
-              {activeActivity.id !== "preguntas-novia" ? (
+              {activeActivity.id === "actividad-mandiola" ? (
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-miami-blue/35 bg-miami-blue/10 p-4 sm:p-5">
+                    <h3 className="font-display text-3xl sm:text-4xl text-white">
+                      Trivia: Cierto o Biotti
+                    </h3>
+                    <p className="mt-2 text-white/80 font-body text-sm sm:text-base">
+                      Regla del viaje: el animador lee la historia. Los que aciertan no toman;
+                      quienes se equivoquen toman un shot y pueden regalar un shot.
+                    </p>
+                    <p className="mt-2 text-white/70 font-body text-sm">
+                      Durante todo el viaje pueden sumar historias reales o falsas del Lula y guardar
+                      shots para regalarlos en cualquier lugar y momento.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    <div className="rounded-xl border border-emerald-300/35 bg-emerald-500/10 px-3 py-2 text-center">
+                      <p className="text-[10px] uppercase tracking-wider font-mono text-emerald-200/85">Aciertos</p>
+                      <p className="font-display text-xl text-emerald-200">{mandiolaCorrectCount}</p>
+                    </div>
+                    <div className="rounded-xl border border-rose-300/35 bg-rose-500/10 px-3 py-2 text-center">
+                      <p className="text-[10px] uppercase tracking-wider font-mono text-rose-200/85">Errores</p>
+                      <p className="font-display text-xl text-rose-200">{mandiolaWrongCount}</p>
+                    </div>
+                    <div className="rounded-xl border border-amber-300/35 bg-amber-500/10 px-3 py-2 text-center">
+                      <p className="text-[10px] uppercase tracking-wider font-mono text-amber-200/85">Shots a tomar</p>
+                      <p className="font-display text-xl text-amber-200">{mandiolaWrongCount}</p>
+                    </div>
+                    <div className="rounded-xl border border-miami-blue/35 bg-miami-blue/10 px-3 py-2 text-center">
+                      <p className="text-[10px] uppercase tracking-wider font-mono text-miami-blue/85">Disponibles</p>
+                      <p className="font-display text-xl text-miami-blue">{mandiolaAvailableGiftShots}</p>
+                    </div>
+                    <div className="rounded-xl border border-fuchsia-300/35 bg-fuchsia-500/10 px-3 py-2 text-center">
+                      <p className="text-[10px] uppercase tracking-wider font-mono text-fuchsia-200/85">Regalados</p>
+                      <p className="font-display text-xl text-fuchsia-200">{mandiolaGiftedCount}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {CIERTO_BIOTTI_ITEMS.map((item, index) => (
+                      <article
+                        key={item.title}
+                        className="rounded-2xl border border-white/20 bg-white/5 p-4 sm:p-5"
+                      >
+                        <h4 className="font-display text-2xl text-white">{item.title}</h4>
+                        <p className="mt-2 text-white/85 font-body text-sm leading-relaxed">
+                          {item.story}
+                        </p>
+                        <div className="mt-3">
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMandiolaGiftedByRound((previous) => {
+                                  const next = [...previous];
+                                  next[index] = false;
+                                  return next;
+                                });
+                                setMandiolaResults((previous) => {
+                                  const next = [...previous];
+                                  next[index] = "correct";
+                                  return next;
+                                });
+                              }}
+                              className={cn(
+                                "inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-body",
+                                mandiolaResults[index] === "correct"
+                                  ? "border-emerald-300/70 bg-emerald-500/25 text-emerald-100"
+                                  : "border-emerald-300/35 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20"
+                              )}
+                            >
+                              Acierto
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMandiolaResults((previous) => {
+                                  const next = [...previous];
+                                  next[index] = "wrong";
+                                  return next;
+                                });
+                              }}
+                              className={cn(
+                                "inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-body",
+                                mandiolaResults[index] === "wrong"
+                                  ? "border-rose-300/70 bg-rose-500/25 text-rose-100"
+                                  : "border-rose-300/35 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20"
+                              )}
+                            >
+                              Error
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (mandiolaGiftedByRound[index]) {
+                                  setMandiolaGiftedByRound((previous) => {
+                                    const next = [...previous];
+                                    next[index] = false;
+                                    return next;
+                                  });
+                                  return;
+                                }
+                                if (mandiolaAvailableGiftShots <= 0) return;
+                                setMandiolaGiftedByRound((previous) => {
+                                  const next = [...previous];
+                                  next[index] = true;
+                                  return next;
+                                });
+                              }}
+                              disabled={!mandiolaGiftedByRound[index] && mandiolaAvailableGiftShots <= 0}
+                              className={cn(
+                                "inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-body",
+                                mandiolaGiftedByRound[index]
+                                  ? "border-fuchsia-300/70 bg-fuchsia-500/25 text-fuchsia-100"
+                                  : "border-fuchsia-300/35 bg-fuchsia-500/10 text-fuchsia-200 hover:bg-fuchsia-500/20",
+                                !mandiolaGiftedByRound[index] &&
+                                  mandiolaAvailableGiftShots <= 0 &&
+                                  "opacity-45 cursor-not-allowed"
+                              )}
+                            >
+                              {mandiolaGiftedByRound[index] ? "Shot regalado" : "Regalar shot"}
+                            </button>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowMandiolaVerdict((previous) => {
+                                const next = [...previous];
+                                next[index] = !next[index];
+                                return next;
+                              })
+                            }
+                            className="inline-flex items-center gap-2 rounded-xl border border-amber-300/45 bg-amber-500/10 px-3 py-2 text-amber-200 text-sm font-body hover:bg-amber-500/20"
+                          >
+                            {showMandiolaVerdict[index] ? "Ocultar veredicto" : "Mostrar veredicto"}
+                          </button>
+                        </div>
+                        {showMandiolaVerdict[index] && (
+                          <p className="mt-3 rounded-xl border border-fuchsia-300/35 bg-fuchsia-500/10 px-3 py-2 text-fuchsia-100 font-body text-sm">
+                            Veredicto: {item.verdict}
+                          </p>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              ) : activeActivity.id !== "preguntas-novia" ? (
                 <div className="min-h-[280px] flex flex-col items-center justify-center text-center">
                   <Sparkles className="w-10 h-10 text-miami-blue mb-4" />
                   <h3 className="font-display text-3xl text-white">{activeActivity.title}</h3>

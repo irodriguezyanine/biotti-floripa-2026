@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   CalendarDays,
   Camera,
+  CloudSun,
   Film,
   MapPin,
   Plane,
@@ -18,6 +19,7 @@ const QUICK_SECTION_LINKS = [
   { href: "#flight", label: "Ir a cronograma de vuelos", icon: Plane },
   { href: "#itinerary", label: "Ir a itinerario", icon: CalendarDays },
   { href: "#location", label: "Ir a ubicación", icon: MapPin },
+  { href: "#climate", label: "Ir a clima", icon: CloudSun },
   { href: "#videos", label: "Ir a videos", icon: Film },
   { href: "#gallery", label: "Ir a galería", icon: Camera },
 ];
