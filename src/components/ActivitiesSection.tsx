@@ -77,6 +77,7 @@ type QuestionStep = "question" | "respond" | "video" | "result";
 type ResultMark = "yes" | "so-so" | "no" | null;
 type BonusStep = "question-video" | "respond" | "answer-video" | "result";
 type PreferenceVoteStep = "handoff" | "vote";
+type PreferenceGameStage = "cover" | "voting" | "challenges" | "final";
 type CiertoBiottiItem = {
   title: string;
   story: string;
@@ -117,6 +118,18 @@ const ACTIVITIES: Activity[] = [
     icon: BookOpenText,
     accentClass: "text-emerald-300",
     borderClass: "border-emerald-300/40",
+  },
+  {
+    id: "juego-preferencias",
+    title: "Juego de preferencias",
+    subtitle: "Votación + desafío de shots",
+    day: "Jueves 21 Mayo",
+    time: "23:20 - 23:50",
+    location: "Cuartel base · dinámica de votación",
+    requiresPassword: false,
+    icon: PartyPopper,
+    accentClass: "text-fuchsia-300",
+    borderClass: "border-fuchsia-300/40",
   },
   {
     id: "actividad-novio",
@@ -376,6 +389,7 @@ export default function ActivitiesSection() {
     BONUS_TRACKS.map(() => null)
   );
   const [bonusActivityStage, setBonusActivityStage] = useState<BonusActivityStage>("intro");
+  const [preferenceGameStage, setPreferenceGameStage] = useState<PreferenceGameStage>("cover");
   const [preferenceVoterIdx, setPreferenceVoterIdx] = useState(0);
   const [preferenceVoteStep, setPreferenceVoteStep] = useState<PreferenceVoteStep>("handoff");
   const [preferenceVotes, setPreferenceVotes] = useState<(string | null)[]>(() =>
@@ -574,10 +588,6 @@ export default function ActivitiesSection() {
     setCurrentQuestionIdx(0);
     setQuestionStep("question");
     setQuestionResults(NOVIA_QUESTIONS.map(() => null));
-    setPreferenceVoterIdx(0);
-    setPreferenceVoteStep("handoff");
-    setPreferenceVotes(MANDIOLA_PLAYERS.map(() => null));
-    setPreferenceChallenges([]);
     setBonusIdx(0);
     setBonusStep("question-video");
     setBonusResults(BONUS_TRACKS.map(() => null));
@@ -591,6 +601,14 @@ export default function ActivitiesSection() {
 
   function resetBonusActivityState() {
     setBonusActivityStage("intro");
+  }
+
+  function resetPreferenceGameState() {
+    setPreferenceGameStage("cover");
+    setPreferenceVoterIdx(0);
+    setPreferenceVoteStep("handoff");
+    setPreferenceVotes(MANDIOLA_PLAYERS.map(() => null));
+    setPreferenceChallenges([]);
   }
 
   function resetMandiolaState() {
@@ -618,6 +636,10 @@ export default function ActivitiesSection() {
     }
     if (activityId === "bonus") {
       resetBonusActivityState();
+      return;
+    }
+    if (activityId === "juego-preferencias") {
+      resetPreferenceGameState();
     }
   }
 
@@ -698,7 +720,7 @@ export default function ActivitiesSection() {
   function onNextAfterResult() {
     if (!currentResult) return;
     if (isLastQuestion) {
-      setNoviaStage("preferences-cover");
+      setNoviaStage("bonus-track");
       return;
     }
     setCurrentQuestionIdx((prev) => prev + 1);
@@ -734,7 +756,7 @@ export default function ActivitiesSection() {
     if (!currentPreferenceVote) return;
     if (isLastPreferenceVoter) {
       buildPreferenceChallenges();
-      setNoviaStage("preferences-challenges");
+      setPreferenceGameStage("challenges");
       return;
     }
     setPreferenceVoterIdx((prev) => prev + 1);
@@ -747,7 +769,7 @@ export default function ActivitiesSection() {
       return;
     }
     if (isFirstPreferenceVoter) {
-      setNoviaStage("preferences-cover");
+      setPreferenceGameStage("cover");
       return;
     }
     setPreferenceVoterIdx((prev) => prev - 1);
@@ -1780,6 +1802,257 @@ export default function ActivitiesSection() {
                           className="inline-flex items-center gap-2 rounded-xl border border-fuchsia-300/45 bg-fuchsia-500/10 px-4 py-2 text-fuchsia-100 font-body hover:bg-fuchsia-500/20"
                         >
                           Reiniciar bonus
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : activeActivity.id === "juego-preferencias" ? (
+                <div className="space-y-4">
+                  {preferenceGameStage === "cover" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-violet-950/65 to-sky-950/75 p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
+                      <div className="rounded-2xl border border-fuchsia-300/35 bg-fuchsia-500/10 p-5 sm:p-6">
+                        <h4 className="font-display text-3xl sm:text-4xl text-white">
+                          Juego de preferencias
+                        </h4>
+                        <p className="mt-3 text-white/90 font-body text-sm sm:text-base leading-relaxed">
+                          Todos tienen 5 minutos para votar su preferida. Si dos o mas eligen a la
+                          misma, se activa el desafio de shots por apuesta escalada.
+                        </p>
+                        <p className="mt-3 text-white/85 font-body text-sm sm:text-base leading-relaxed">
+                          Dinamica: se pasa el telefono integrante por integrante, votan, y luego
+                          se resuelven duelos por coincidencias con ganador oficial.
+                        </p>
+                      </div>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={closeActivityModal}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPreferenceGameStage("voting")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
+                        >
+                          Empezar votacion
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {preferenceGameStage === "voting" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-slate-900/70 to-fuchsia-950/60 p-4 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+                      <div className="flex items-center justify-between gap-2 mb-4">
+                        <span className="text-xs font-mono uppercase tracking-[0.18em] text-white/65">
+                          Votante {preferenceVoterIdx + 1} / {MANDIOLA_PLAYERS.length}
+                        </span>
+                        <span className="text-[11px] font-mono uppercase tracking-[0.18em] text-fuchsia-200 rounded-full border border-fuchsia-300/40 bg-fuchsia-500/10 px-2 py-1">
+                          {preferenceVoteStep === "handoff" ? "pasa el telefono" : "votacion"}
+                        </span>
+                      </div>
+
+                      {preferenceVoteStep === "handoff" ? (
+                        <motion.div
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="rounded-2xl border border-amber-300/35 bg-gradient-to-r from-amber-500/15 to-orange-500/10 p-6 sm:p-8 text-center"
+                        >
+                          <p className="text-xs font-mono uppercase tracking-[0.2em] text-amber-200/85">
+                            Preparacion
+                          </p>
+                          <h4 className="mt-3 font-display text-4xl sm:text-5xl text-amber-100">
+                            Pasa el telefono a {currentPreferenceVoterName}
+                          </h4>
+                        </motion.div>
+                      ) : (
+                        <>
+                          <div className="rounded-2xl border border-fuchsia-300/30 bg-fuchsia-500/10 p-4">
+                            <p className="text-white/85 font-body text-sm sm:text-base">
+                              {currentPreferenceVoterName} vota su preferida.
+                            </p>
+                          </div>
+                          <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {PREFERENCE_WOMEN.map((woman) => (
+                              <button
+                                key={`woman-pref-${woman.name}`}
+                                type="button"
+                                onClick={() => markPreferenceVote(woman.name)}
+                                className={cn(
+                                  "rounded-xl border px-3 py-2 text-left text-sm font-body transition-colors",
+                                  currentPreferenceVote === woman.name
+                                    ? "border-fuchsia-300/70 bg-fuchsia-500/25 text-fuchsia-100"
+                                    : "border-white/20 bg-white/5 text-white/80 hover:bg-white/10"
+                                )}
+                              >
+                                {woman.name}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={onPreviousPreferenceStage}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={onNextPreferenceStage}
+                          disabled={preferenceVoteStep === "vote" && !currentPreferenceVote}
+                          className={cn(
+                            "inline-flex items-center gap-2 rounded-xl border px-4 py-2 font-body",
+                            preferenceVoteStep === "vote" && !currentPreferenceVote
+                              ? "border-white/15 bg-white/10 text-white/40 cursor-not-allowed"
+                              : "border-miami-blue/55 bg-miami-blue/15 text-miami-blue hover:bg-miami-blue/25"
+                          )}
+                        >
+                          {preferenceVoteStep === "handoff"
+                            ? "Ir a votar"
+                            : isLastPreferenceVoter
+                              ? "Ver desafios"
+                              : "Siguiente integrante"}
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {preferenceGameStage === "challenges" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-slate-900/70 to-rose-950/55 p-4 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+                      <h4 className="font-display text-3xl sm:text-4xl text-white">
+                        Desafio de shots por coincidencias
+                      </h4>
+                      <p className="mt-2 text-white/80 font-body text-sm sm:text-base">
+                        Suban apuesta, cierren duelo con “te creo” y marquen ganador por tarjeta.
+                      </p>
+
+                      <div className="mt-4 rounded-xl border border-white/20 bg-white/5 p-3">
+                        <p className="text-xs font-mono uppercase tracking-[0.16em] text-white/65 mb-2">
+                          Resumen de votos
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(preferenceVotesByWoman).map(([womanName, voters]) => (
+                            <span
+                              key={`summary-pref-${womanName}`}
+                              className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-xs text-white/85 font-body"
+                            >
+                              {womanName}: {voters.join(", ")}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {preferenceChallenges.length === 0 ? (
+                        <div className="mt-4 rounded-2xl border border-emerald-300/35 bg-emerald-500/10 p-4 text-center">
+                          <p className="font-display text-2xl text-emerald-100">
+                            Sin coincidencias, no hay duelo
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="mt-4 space-y-3">
+                          {preferenceChallenges.map((challenge, challengeIdx) => (
+                            <div
+                              key={`challenge-pref-${challenge.womanName}-${challengeIdx}`}
+                              className="rounded-2xl border border-amber-300/35 bg-amber-500/10 p-4"
+                            >
+                              <p className="text-xs font-mono uppercase tracking-[0.16em] text-amber-200/85">
+                                Coincidencia: {challenge.womanName}
+                              </p>
+                              <p className="mt-2 text-white/90 font-body text-sm">
+                                Contendientes: {challenge.contenders.join(" vs ")}
+                              </p>
+                              <div className="mt-3 flex flex-wrap items-center gap-2">
+                                <span className="rounded-full border border-white/20 bg-black/20 px-3 py-1 text-xs text-white/85 font-body">
+                                  Apuesta actual: {challenge.shotBid} shot
+                                  {challenge.shotBid > 1 ? "s" : ""}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => onIncreaseChallengeBid(challengeIdx)}
+                                  className="rounded-lg border border-fuchsia-300/45 bg-fuchsia-500/10 px-3 py-1 text-xs text-fuchsia-100 font-body hover:bg-fuchsia-500/20"
+                                >
+                                  Subir apuesta
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => onLockChallenge(challengeIdx)}
+                                  className="rounded-lg border border-miami-blue/45 bg-miami-blue/10 px-3 py-1 text-xs text-miami-blue font-body hover:bg-miami-blue/20"
+                                >
+                                  Te creo
+                                </button>
+                              </div>
+                              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {challenge.contenders.map((contender) => (
+                                  <button
+                                    key={`winner-pref-${challenge.womanName}-${contender}`}
+                                    type="button"
+                                    onClick={() => onPickChallengeWinner(challengeIdx, contender)}
+                                    className={cn(
+                                      "rounded-xl border px-3 py-2 text-sm font-body",
+                                      challenge.winner === contender
+                                        ? "border-emerald-300/70 bg-emerald-500/25 text-emerald-100"
+                                        : "border-white/20 bg-white/5 text-white/80 hover:bg-white/10"
+                                    )}
+                                  >
+                                    Gana {contender}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setPreferenceGameStage("voting")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPreferenceGameStage("final")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-miami-blue/15 px-4 py-2 text-miami-blue font-body hover:bg-miami-blue/25"
+                        >
+                          Cerrar juego
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {preferenceGameStage === "final" && (
+                    <div className="rounded-3xl border border-fuchsia-300/35 bg-gradient-to-br from-fuchsia-900/35 to-sky-950/70 p-5 sm:p-7 text-center">
+                      <h4 className="font-display text-4xl sm:text-5xl text-white">
+                        Juego de preferencias completo
+                      </h4>
+                      <p className="mt-3 text-white/80 font-body">
+                        Votacion y desafios cerrados. Ya pueden pasar al siguiente bloque.
+                      </p>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setPreferenceGameStage("challenges")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={resetPreferenceGameState}
+                          className="inline-flex items-center gap-2 rounded-xl border border-fuchsia-300/45 bg-fuchsia-500/10 px-4 py-2 text-fuchsia-100 font-body hover:bg-fuchsia-500/20"
+                        >
+                          Reiniciar juego
                         </button>
                       </div>
                     </div>
