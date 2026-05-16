@@ -4,6 +4,7 @@ import FlightDashboard from "@/components/FlightDashboard";
 import Itinerary from "@/components/Itinerary";
 import ActivitiesSection from "@/components/ActivitiesSection";
 import LocationSection from "@/components/LocationSection";
+import ClimateSection from "@/components/ClimateSection";
 import VideoSection from "@/components/VideoSection";
 import GallerySection from "@/components/GallerySection";
 import Footer from "@/components/Footer";
@@ -17,6 +18,7 @@ export default function Home() {
       <Itinerary />
       <ActivitiesSection />
       <LocationSection />
+      <ClimateSection />
       <VideoSection />
       <GallerySection />
       <Footer />

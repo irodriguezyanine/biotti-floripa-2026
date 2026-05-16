@@ -43,7 +43,7 @@ type NoviaGameStage =
   | "bonus-question-video"
   | "bonus-answer-video";
 
-type QuestionStep = "question" | "video" | "result";
+type QuestionStep = "question" | "respond" | "video" | "result";
 type ResultMark = "yes" | "so-so" | "no" | null;
 
 const ACTIVITIES: Activity[] = [
@@ -56,28 +56,36 @@ const ACTIVITIES: Activity[] = [
     accentClass: "text-neon-pink",
   },
   {
-    id: "desafio-shots",
-    title: "Desafío Shots",
-    subtitle: "Ronda de castigos",
+    id: "actividad-novio",
+    title: "Actividad del novio",
+    subtitle: "Bloque especial",
     password: "Shots2026",
     icon: PartyPopper,
     accentClass: "text-sunset-orange",
   },
   {
-    id: "trivia-crew",
-    title: "Trivia Crew",
-    subtitle: "Puntos por equipo",
+    id: "actividad-mandiola",
+    title: "Actividad Mandiola",
+    subtitle: "Bloque sorpresa",
     password: "CrewPass26",
     icon: Trophy,
     accentClass: "text-miami-blue",
   },
   {
-    id: "caja-secreta",
-    title: "Caja Secreta",
-    subtitle: "Retos sorpresa",
+    id: "actividad-manuel",
+    title: "Actividad Manuel",
+    subtitle: "Bloque sorpresa",
     password: "BiottiVIP",
     icon: Crown,
     accentClass: "text-amber-300",
+  },
+  {
+    id: "bonus",
+    title: "BONUS",
+    subtitle: "Contenido extra",
+    password: "Bonus2026",
+    icon: Sparkles,
+    accentClass: "text-fuchsia-300",
   },
 ];
 
@@ -403,40 +411,48 @@ export default function ActivitiesSection() {
                       Preguntas Novia
                     </h3>
                     <p className="mt-2 text-white/70 text-sm sm:text-base font-body">
-                      3 etapas por pregunta: pregunta, video y evaluación del novio.
+                      4 etapas por pregunta: pregunta, responde, video y evaluación del novio.
                     </p>
                   </div>
 
                   {noviaStage === "cover" && (
                     <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-violet-950/65 to-sky-950/75 p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
                       <div className="rounded-2xl border border-fuchsia-300/35 bg-fuchsia-500/10 p-5 sm:p-6">
-                        <p className="text-[11px] uppercase tracking-[0.2em] text-miami-blue font-mono mb-2">
-                          Portada del juego
-                        </p>
                         <h4 className="font-display text-3xl sm:text-4xl text-white">
                           Desafío: Preguntas Novia vs Novio
                         </h4>
                         <p className="mt-3 text-white/85 font-body text-sm sm:text-base leading-relaxed">
                           Biotti debe adivinar respuestas personales de Vale en 15 rondas.
-                          Cada pregunta se juega en 3 etapas: leer pregunta, ver video respuesta
-                          de Vale y evaluar si el novio acertó.
+                          Cada pregunta se juega en 4 etapas: leer pregunta, responder,
+                          ver video respuesta de Vale y evaluar si el novio acertó.
                         </p>
-                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
                           <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-center">
                             <p className="text-xs font-mono uppercase tracking-wider text-white/65">Etapa 1</p>
                             <p className="text-white font-body text-sm">Pregunta</p>
                           </div>
                           <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-center">
                             <p className="text-xs font-mono uppercase tracking-wider text-white/65">Etapa 2</p>
-                            <p className="text-white font-body text-sm">Video</p>
+                            <p className="text-white font-body text-sm">Responde</p>
                           </div>
                           <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-center">
                             <p className="text-xs font-mono uppercase tracking-wider text-white/65">Etapa 3</p>
+                            <p className="text-white font-body text-sm">Video</p>
+                          </div>
+                          <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-center">
+                            <p className="text-xs font-mono uppercase tracking-wider text-white/65">Etapa 4</p>
                             <p className="text-white font-body text-sm">Resultado</p>
                           </div>
                         </div>
                       </div>
-                      <div className="mt-4 flex justify-end">
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={closeActivityModal}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Volver
+                        </button>
                         <button
                           type="button"
                           onClick={() => setNoviaStage("instructions")}
@@ -462,7 +478,14 @@ export default function ActivitiesSection() {
                           <li>6) Si el novio gana, todos toman al seco. Si el novio pierde, toma al seco.</li>
                         </ul>
                       </div>
-                      <div className="mt-4 flex justify-end">
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setNoviaStage("cover")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
                         <button
                           type="button"
                           onClick={() => setNoviaStage("intro-video")}
@@ -484,10 +507,20 @@ export default function ActivitiesSection() {
                           className="w-full rounded-xl max-h-[460px] bg-black"
                         />
                       </div>
-                      <div className="mt-4 flex justify-end">
+                      <div className="mt-4 flex items-center justify-between gap-3">
                         <button
                           type="button"
-                          onClick={() => setNoviaStage("questions")}
+                          onClick={() => setNoviaStage("instructions")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuestionStep("question");
+                            setNoviaStage("questions");
+                          }}
                           className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
                         >
                           Siguiente
@@ -507,6 +540,8 @@ export default function ActivitiesSection() {
                           Etapa:{" "}
                           {questionStep === "question"
                             ? "pregunta"
+                            : questionStep === "respond"
+                              ? "responde"
                             : questionStep === "video"
                               ? "video"
                               : "resultado"}
@@ -530,6 +565,47 @@ export default function ActivitiesSection() {
                             </motion.div>
                           </AnimatePresence>
                           <div className="mt-4 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => setNoviaStage("intro-video")}
+                              className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15 mr-auto"
+                            >
+                              Anterior
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setQuestionStep("respond")}
+                              className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
+                            >
+                              Siguiente
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </>
+                      )}
+
+                      {questionStep === "respond" && (
+                        <>
+                          <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="rounded-2xl border border-amber-300/35 bg-gradient-to-r from-amber-500/15 to-orange-500/10 p-6 sm:p-8 text-center"
+                          >
+                            <p className="text-xs font-mono uppercase tracking-[0.2em] text-amber-200/85">
+                              Etapa especial
+                            </p>
+                            <h4 className="mt-3 font-display text-4xl sm:text-5xl text-amber-100">
+                              BIOTTI, RESPONDE
+                            </h4>
+                          </motion.div>
+                          <div className="mt-4 flex items-center justify-between gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setQuestionStep("question")}
+                              className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                            >
+                              Anterior
+                            </button>
                             <button
                               type="button"
                               onClick={() => setQuestionStep("video")}
@@ -560,7 +636,14 @@ export default function ActivitiesSection() {
                               </div>
                             )}
                           </div>
-                          <div className="mt-4 flex justify-end">
+                          <div className="mt-4 flex items-center justify-between gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setQuestionStep("respond")}
+                              className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                            >
+                              Anterior
+                            </button>
                             <button
                               type="button"
                               onClick={() => setQuestionStep("result")}
@@ -621,7 +704,14 @@ export default function ActivitiesSection() {
                               </button>
                             </div>
                           </div>
-                          <div className="mt-4 flex justify-end">
+                          <div className="mt-4 flex items-center justify-between gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setQuestionStep("video")}
+                              className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                            >
+                              Anterior
+                            </button>
                             <button
                               type="button"
                               onClick={onNextAfterResult}
@@ -659,14 +749,26 @@ export default function ActivitiesSection() {
                       <p className="mt-3 text-white/75 font-body">
                         Preguntas de la novia para el novio.
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => setNoviaStage("bonus-question-video")}
-                        className="mt-5 inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
-                      >
-                        Siguiente
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
+                      <div className="mt-5 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNoviaStage("questions");
+                            setQuestionStep("result");
+                          }}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNoviaStage("bonus-question-video")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
+                        >
+                          Siguiente
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
                     </motion.div>
                   )}
 
@@ -679,7 +781,14 @@ export default function ActivitiesSection() {
                           className="w-full rounded-xl max-h-[460px] bg-black"
                         />
                       </div>
-                      <div className="mt-4 flex justify-end">
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setNoviaStage("bonus-track")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
                         <button
                           type="button"
                           onClick={() => setNoviaStage("bonus-answer-video")}
@@ -714,6 +823,15 @@ export default function ActivitiesSection() {
                             Puntaje: {totalScore.toFixed(1)} / {NOVIA_QUESTIONS.length}
                           </span>
                         </p>
+                      </div>
+                      <div className="mt-4 flex justify-start">
+                        <button
+                          type="button"
+                          onClick={() => setNoviaStage("bonus-question-video")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
                       </div>
                     </div>
                   )}
