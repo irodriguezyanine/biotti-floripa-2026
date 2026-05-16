@@ -2178,6 +2178,60 @@ export default function ActivitiesSection() {
                         </div>
                       )}
 
+                      <div className="mt-4 rounded-2xl border border-white/20 bg-black/25 p-3 sm:p-4">
+                        <p className="text-xs font-mono uppercase tracking-[0.16em] text-white/65 mb-3">
+                          Tabla total con preferencias
+                        </p>
+                        <div className="overflow-x-auto rounded-xl border border-white/15">
+                          <table className="min-w-[760px] w-full text-left">
+                            <thead>
+                              <tr className="border-b border-white/20 bg-white/10">
+                                <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
+                                  Nombre
+                                </th>
+                                <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
+                                  Cara
+                                </th>
+                                <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
+                                  Culo
+                                </th>
+                                <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
+                                  Tetas
+                                </th>
+                                <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
+                                  Promedio
+                                </th>
+                                <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
+                                  Votaron por ella
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {PREFERENCE_WOMEN.map((woman) => {
+                                const voters = preferenceVotesByWoman[woman.name] ?? [];
+                                return (
+                                  <tr
+                                    key={`total-pref-${woman.name}`}
+                                    className="border-b border-white/10 bg-transparent"
+                                  >
+                                    <td className="px-3 py-2 text-sm text-white font-semibold">
+                                      {woman.name}
+                                    </td>
+                                    <td className="px-3 py-2 text-sm text-white/85">{woman.cara}</td>
+                                    <td className="px-3 py-2 text-sm text-white/85">{woman.culo}</td>
+                                    <td className="px-3 py-2 text-sm text-white/85">{woman.tetas}</td>
+                                    <td className="px-3 py-2 text-sm text-white/85">{woman.promedio}</td>
+                                    <td className="px-3 py-2 text-sm text-white/85">
+                                      {voters.length > 0 ? voters.join(", ") : "Sin votos"}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
                       <div className="mt-4 flex items-center justify-between gap-3">
                         <button
                           type="button"
