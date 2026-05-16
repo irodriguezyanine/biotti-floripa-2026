@@ -3,11 +3,15 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  CalendarDays,
+  BookOpenText,
   CheckCircle2,
   ChevronRight,
   Clapperboard,
+  Clock3,
   Circle,
   Crown,
+  MapPin,
   XCircle,
   KeyRound,
   Lock,
@@ -25,9 +29,14 @@ type Activity = {
   id: string;
   title: string;
   subtitle: string;
-  password: string;
+  day: string;
+  time: string;
+  location: string;
+  password?: string;
+  requiresPassword: boolean;
   icon: typeof Clapperboard;
   accentClass: string;
+  borderClass: string;
 };
 
 type NoviaQuestion = {
@@ -61,47 +70,89 @@ type CiertoBiottiItem = {
 };
 type MandiolaVote = "true" | "false" | null;
 type MandiolaPhase = "vote" | "result" | "summary";
+type OracionStage = "cover" | "lines";
+type OracionLine = {
+  speaker: "novio" | "todos";
+  text: string;
+};
 
 const ACTIVITIES: Activity[] = [
   {
     id: "preguntas-novia",
     title: "Preguntas Novia",
     subtitle: "Quiz + respuesta en video",
+    day: "Jueves 21 Mayo",
+    time: "21:30 - 23:00",
+    location: "Cuartel base · PRE y Actividad Novia",
     password: "Vale123",
+    requiresPassword: true,
     icon: Clapperboard,
     accentClass: "text-neon-pink",
+    borderClass: "border-neon-pink/40",
+  },
+  {
+    id: "oracion-equipo",
+    title: "Oración de equipo",
+    subtitle: "Ritual guiado + brindis coral",
+    day: "Jueves 21 Mayo",
+    time: "23:00 - 23:20",
+    location: "Cuartel base · antes de salir",
+    requiresPassword: false,
+    icon: BookOpenText,
+    accentClass: "text-emerald-300",
+    borderClass: "border-emerald-300/40",
   },
   {
     id: "actividad-novio",
     title: "Actividad del novio",
     subtitle: "Bloque especial",
+    day: "Sábado 23 Mayo",
+    time: "21:00 - 22:00",
+    location: "Cuartel base · Bloque creado por el novio",
     password: "Shots2026",
+    requiresPassword: true,
     icon: PartyPopper,
     accentClass: "text-sunset-orange",
+    borderClass: "border-sunset-orange/40",
   },
   {
     id: "actividad-mandiola",
     title: "Actividad Mandiola",
     subtitle: "Bloque sorpresa",
+    day: "Viernes 22 Mayo",
+    time: "20:30 - 21:00",
+    location: "Cuartel base · Pre noche",
     password: "FranSoto123",
+    requiresPassword: true,
     icon: Trophy,
     accentClass: "text-miami-blue",
+    borderClass: "border-miami-blue/40",
   },
   {
     id: "actividad-manuel",
     title: "Actividad Manuel",
     subtitle: "Bloque sorpresa",
+    day: "Viernes 22 Mayo",
+    time: "21:30 - 22:00",
+    location: "Cuartel base · Desafío relámpago",
     password: "BiottiVIP",
+    requiresPassword: true,
     icon: Crown,
     accentClass: "text-amber-300",
+    borderClass: "border-amber-300/40",
   },
   {
     id: "bonus",
     title: "BONUS",
     subtitle: "Contenido extra",
+    day: "Viernes 22 Mayo",
+    time: "19:15 - 20:30",
+    location: "Bloque sorpresa · cierre secreto",
     password: "Bonus2026",
+    requiresPassword: true,
     icon: Sparkles,
     accentClass: "text-fuchsia-300",
+    borderClass: "border-fuchsia-300/40",
   },
 ];
 
@@ -238,6 +289,42 @@ const BONUS_TRACKS: BonusTrack[] = [
   },
 ];
 
+const ORACION_TEAM_LINES: OracionLine[] = [
+  { speaker: "novio", text: "Hermanos queridos, ¿estamos todos?" },
+  { speaker: "todos", text: "¡Estamos!" },
+  { speaker: "novio", text: "¿Cómo quién somos?" },
+  { speaker: "todos", text: "¡Tomamos!" },
+  { speaker: "novio", text: "A las mujeres..." },
+  { speaker: "todos", text: "¡Amamos!" },
+  { speaker: "novio", text: "Con sus novios..." },
+  { speaker: "todos", text: "¡Nos peleamos!" },
+  {
+    speaker: "novio",
+    text: "Dios, que en su infinita bondad, casi siempre borrachos nos tiene...",
+  },
+  { speaker: "todos", text: "¡Será porque nos conviene!" },
+  { speaker: "novio", text: "¿Tomó nuestro padre Adán?" },
+  { speaker: "todos", text: "¡Tomó!" },
+  { speaker: "novio", text: "¿Tomó nuestra madre Eva?" },
+  { speaker: "todos", text: "¡Qué borracha era!" },
+  { speaker: "novio", text: "Entonces tomemos, porque el que toma..." },
+  { speaker: "todos", text: "¡Se emborracha!" },
+  { speaker: "novio", text: "Y el que se emborracha..." },
+  { speaker: "todos", text: "¡Duerme!" },
+  { speaker: "novio", text: "Y el que duerme..." },
+  { speaker: "todos", text: "¡No peca!" },
+  { speaker: "novio", text: "Y el que no peca..." },
+  { speaker: "todos", text: "¡Va al cielo!" },
+  { speaker: "novio", text: "Y como sabemos que al cielo vamos..." },
+  { speaker: "todos", text: "¡Tomemos!" },
+  { speaker: "novio", text: "Y antes, cuando no nos conocíamos..." },
+  { speaker: "todos", text: "¡Tomábamos!" },
+  { speaker: "novio", text: "Y ahora que ya nos conocemos..." },
+  { speaker: "todos", text: "¡Tomamos!" },
+  { speaker: "novio", text: "Pues tomemos hasta que no nos conozcamos..." },
+  { speaker: "todos", text: "¡Ni de raja nos vayamos!" },
+];
+
 export default function ActivitiesSection() {
   const [passwordModalFor, setPasswordModalFor] = useState<string | null>(null);
   const [resumePromptFor, setResumePromptFor] = useState<string | null>(null);
@@ -256,6 +343,8 @@ export default function ActivitiesSection() {
   const [bonusResults, setBonusResults] = useState<ResultMark[]>(() =>
     BONUS_TRACKS.map(() => null)
   );
+  const [oracionStage, setOracionStage] = useState<OracionStage>("cover");
+  const [oracionLineIdx, setOracionLineIdx] = useState(0);
   const [mandiolaQuestionIdx, setMandiolaQuestionIdx] = useState(0);
   const [mandiolaPhase, setMandiolaPhase] = useState<MandiolaPhase>("vote");
   const [mandiolaVotes, setMandiolaVotes] = useState<MandiolaVote[][]>(
@@ -289,6 +378,9 @@ export default function ActivitiesSection() {
   const currentBonus = BONUS_TRACKS[bonusIdx];
   const isLastBonus = bonusIdx === BONUS_TRACKS.length - 1;
   const currentBonusResult = bonusResults[bonusIdx];
+  const currentOracionLine = ORACION_TEAM_LINES[oracionLineIdx];
+  const isFirstOracionLine = oracionLineIdx === 0;
+  const isLastOracionLine = oracionLineIdx === ORACION_TEAM_LINES.length - 1;
   const yesCount = questionResults.filter((item) => item === "yes").length;
   const soSoCount = questionResults.filter((item) => item === "so-so").length;
   const noCount = questionResults.filter((item) => item === "no").length;
@@ -434,6 +526,11 @@ export default function ActivitiesSection() {
     setNoviaStage("cover");
   }
 
+  function resetOracionState() {
+    setOracionStage("cover");
+    setOracionLineIdx(0);
+  }
+
   function resetMandiolaState() {
     setMandiolaQuestionIdx(0);
     setMandiolaPhase("vote");
@@ -451,6 +548,10 @@ export default function ActivitiesSection() {
     }
     if (activityId === "actividad-mandiola") {
       resetMandiolaState();
+      return;
+    }
+    if (activityId === "oracion-equipo") {
+      resetOracionState();
     }
   }
 
@@ -480,6 +581,18 @@ export default function ActivitiesSection() {
   }
 
   function onOpenActivity(activityId: string) {
+    const activity = ACTIVITIES.find((item) => item.id === activityId);
+    if (!activity) return;
+
+    if (!activity.requiresPassword) {
+      if (activitySessionExists[activityId]) {
+        setResumePromptFor(activityId);
+      } else {
+        openActivity(activityId, { restart: true });
+      }
+      return;
+    }
+
     if (unlocked[activityId]) {
       if (activitySessionExists[activityId]) {
         setResumePromptFor(activityId);
@@ -496,6 +609,7 @@ export default function ActivitiesSection() {
   function onValidatePassword() {
     const activity = ACTIVITIES.find((item) => item.id === passwordModalFor);
     if (!activity) return;
+    if (!activity.requiresPassword) return;
 
     if (passwordInput.trim() === activity.password) {
       setUnlocked((previous) => ({ ...previous, [activity.id]: true }));
@@ -641,13 +755,14 @@ export default function ActivitiesSection() {
           viewport={{ once: true }}
           className="text-center text-white/70 font-body text-sm sm:text-base mb-10"
         >
-          4 juegos bloqueados con contraseña
+          {ACTIVITIES.filter((activity) => activity.requiresPassword).length} juegos con
+          contraseña + {ACTIVITIES.filter((activity) => !activity.requiresPassword).length} actividad abierta + horario oficial
         </motion.p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
           {ACTIVITIES.map((activity, index) => {
             const Icon = activity.icon;
-            const isUnlocked = Boolean(unlocked[activity.id]);
+            const isUnlocked = !activity.requiresPassword || Boolean(unlocked[activity.id]);
             return (
               <motion.button
                 key={activity.id}
@@ -657,10 +772,13 @@ export default function ActivitiesSection() {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.06 }}
                 onClick={() => onOpenActivity(activity.id)}
-                className="glass-card rounded-2xl border border-white/20 p-5 text-left hover:border-miami-blue/60 hover:bg-white/10 transition-all"
+                className={cn(
+                  "group glass-card rounded-2xl border p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/10",
+                  activity.borderClass
+                )}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/20 bg-white/10">
+                  <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/20 bg-white/10 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
                     <Icon className={cn("h-5 w-5", activity.accentClass)} />
                   </div>
                   {isUnlocked ? (
@@ -669,8 +787,23 @@ export default function ActivitiesSection() {
                     <Lock className="h-5 w-5 text-white/60 shrink-0" />
                   )}
                 </div>
-                <h3 className="mt-4 font-display text-2xl text-white">{activity.title}</h3>
+                <h3 className="mt-4 font-display text-2xl text-white group-hover:text-white">{activity.title}</h3>
                 <p className="mt-1 text-sm text-white/65 font-body">{activity.subtitle}</p>
+
+                <div className="mt-4 grid grid-cols-1 gap-2">
+                  <div className="rounded-xl border border-white/15 bg-black/20 px-3 py-2 flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-miami-blue shrink-0" />
+                    <p className="text-xs sm:text-sm text-white/85 font-body">{activity.day}</p>
+                  </div>
+                  <div className="rounded-xl border border-white/15 bg-black/20 px-3 py-2 flex items-center gap-2">
+                    <Clock3 className="h-4 w-4 text-amber-200 shrink-0" />
+                    <p className="text-xs sm:text-sm text-white/85 font-body">{activity.time}</p>
+                  </div>
+                  <div className="rounded-xl border border-white/15 bg-black/20 px-3 py-2 flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-fuchsia-200 shrink-0" />
+                    <p className="text-xs sm:text-sm text-white/85 font-body">{activity.location}</p>
+                  </div>
+                </div>
               </motion.button>
             );
           })}
@@ -1177,6 +1310,131 @@ export default function ActivitiesSection() {
                       </button>
                     </div>
                   </article>
+                </div>
+              ) : activeActivity.id === "oracion-equipo" ? (
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-emerald-300/35 bg-emerald-500/10 p-4 sm:p-5">
+                    <h3 className="font-display text-3xl sm:text-4xl text-white">Oración de equipo</h3>
+                    <p className="mt-2 text-white/80 font-body text-sm sm:text-base">
+                      Ritual guiado de brindis en formato líder/coro para encender al equipo antes de salir.
+                    </p>
+                  </div>
+
+                  {oracionStage === "cover" ? (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-emerald-950/55 to-sky-950/70 p-5 sm:p-7">
+                      <div className="rounded-2xl border border-emerald-300/35 bg-emerald-500/10 p-4 sm:p-6">
+                        <h4 className="font-display text-3xl sm:text-4xl text-white">Portada del ritual</h4>
+                        <p className="mt-3 text-white/90 font-body text-sm sm:text-base leading-relaxed">
+                          Cuenta la leyenda que, en un lugar de la Mancha llamado Franco 2x1,
+                          Biotti empezó su carrera espiritual en formato cura del carrete.
+                        </p>
+                        <p className="mt-3 text-white/85 font-body text-sm sm:text-base leading-relaxed">
+                          Por eso, en esta despedida recreamos una oración-brindis inspirada en
+                          tradiciones universitarias nacidas en el siglo XIII, en Salamanca
+                          (Castilla y León, España), adaptada al modo Floripa.
+                        </p>
+                        <div className="mt-4 rounded-xl border border-white/20 bg-black/20 px-4 py-3">
+                          <p className="text-xs font-mono uppercase tracking-[0.18em] text-emerald-200/85">
+                            Dinámica
+                          </p>
+                          <p className="mt-1 text-white/85 font-body text-sm">
+                            BIOTTI - EL NOVIO DICE / TODOS DICEN. Un paso por vez, con coro
+                            completo y brindis en alto.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={closeActivityModal}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOracionStage("lines")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
+                        >
+                          Comenzar oración
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-slate-900/70 to-emerald-950/60 p-5 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+                      <div className="flex items-center justify-between gap-2 mb-4">
+                        <span className="text-xs font-mono uppercase tracking-[0.18em] text-white/65">
+                          Verso {oracionLineIdx + 1} / {ORACION_TEAM_LINES.length}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-[11px] font-mono uppercase tracking-[0.18em] rounded-full border px-2 py-1",
+                            currentOracionLine.speaker === "novio"
+                              ? "border-emerald-300/45 bg-emerald-500/10 text-emerald-200"
+                              : "border-fuchsia-300/45 bg-fuchsia-500/10 text-fuchsia-200"
+                          )}
+                        >
+                          {currentOracionLine.speaker === "novio"
+                            ? "BIOTTI - EL NOVIO DICE"
+                            : "TODOS DICEN"}
+                        </span>
+                      </div>
+
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={`${oracionLineIdx}-${currentOracionLine.text}`}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2 }}
+                          className={cn(
+                            "rounded-2xl border p-5 sm:p-7 text-center",
+                            currentOracionLine.speaker === "novio"
+                              ? "border-emerald-300/35 bg-gradient-to-r from-emerald-500/15 to-cyan-500/10"
+                              : "border-fuchsia-300/35 bg-gradient-to-r from-fuchsia-500/15 to-violet-500/10"
+                          )}
+                        >
+                          <p className="font-display text-3xl sm:text-5xl text-white leading-tight">
+                            {currentOracionLine.text}
+                          </p>
+                        </motion.div>
+                      </AnimatePresence>
+
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isFirstOracionLine) {
+                              setOracionStage("cover");
+                              return;
+                            }
+                            setOracionLineIdx((prev) => prev - 1);
+                          }}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isLastOracionLine) return;
+                            setOracionLineIdx((prev) => prev + 1);
+                          }}
+                          disabled={isLastOracionLine}
+                          className={cn(
+                            "inline-flex items-center gap-2 rounded-xl border px-4 py-2 font-body",
+                            isLastOracionLine
+                              ? "border-white/15 bg-white/10 text-white/40 cursor-not-allowed"
+                              : "border-miami-blue/55 bg-miami-blue/15 text-miami-blue hover:bg-miami-blue/25"
+                          )}
+                        >
+                          {isLastOracionLine ? "Oración completa" : "Siguiente"}
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : activeActivity.id !== "preguntas-novia" ? (
                 <div className="min-h-[280px] flex flex-col items-center justify-center text-center">
