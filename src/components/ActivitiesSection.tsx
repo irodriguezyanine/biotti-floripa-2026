@@ -894,6 +894,19 @@ export default function ActivitiesSection() {
     });
   }
 
+  function onResetChallenge(challengeIdx: number) {
+    setPreferenceChallenges((previous) => {
+      const next = [...previous];
+      next[challengeIdx] = {
+        ...next[challengeIdx],
+        shotBid: 1,
+        isLocked: false,
+        winner: null,
+      };
+      return next;
+    });
+  }
+
   function onPickChallengeWinner(challengeIdx: number, winnerName: string) {
     setPreferenceChallenges((previous) => {
       const next = [...previous];
@@ -2131,6 +2144,16 @@ export default function ActivitiesSection() {
                                   className="rounded-lg border border-miami-blue/45 bg-miami-blue/10 px-3 py-1 text-xs text-miami-blue font-body hover:bg-miami-blue/20"
                                 >
                                   Te creo
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => onResetChallenge(challengeIdx)}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-amber-300/45 bg-amber-500/10 px-3 py-1 text-xs text-amber-200 font-body hover:bg-amber-500/20"
+                                  aria-label="Reiniciar desafío"
+                                  title="Reiniciar desafío"
+                                >
+                                  <RotateCcw className="h-3.5 w-3.5" />
+                                  Reiniciar
                                 </button>
                               </div>
                               <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
