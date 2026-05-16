@@ -2146,8 +2146,8 @@ export default function ActivitiesSection() {
                             Flujo
                           </p>
                           <p className="mt-1 text-white/85 font-body text-sm">
-                            Pasa el telefono a cada integrante -> vota -> detectar repetidos ->
-                            desafio de shots -> ganador por tarjeta.
+                            Pasa el telefono a cada integrante -&gt; vota -&gt; detectar repetidos
+                            -&gt; desafio de shots -&gt; ganador por tarjeta.
                           </p>
                         </div>
                       </div>
