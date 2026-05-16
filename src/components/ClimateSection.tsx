@@ -42,6 +42,29 @@ function formatDate(date: string) {
   }).format(new Date(`${date}T12:00:00`));
 }
 
+function getPackingSuggestion(day: DailyForecast) {
+  const items: string[] = ["traje de baño", "polera"];
+
+  if (day.minTemp <= 15 || day.windKmh >= 22) {
+    items.push("polerón");
+  }
+  if (day.minTemp <= 13 || day.rainProbability >= 45) {
+    items.push("parca liviana");
+  }
+  if (day.rainProbability >= 35) {
+    items.push("impermeable");
+  }
+  if (day.maxTemp <= 20) {
+    items.push("pantalón largo");
+  } else {
+    items.push("short");
+  }
+  items.push("camisa para la noche");
+
+  const unique = Array.from(new Set(items));
+  return unique.join(" · ");
+}
+
 export default function ClimateSection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -132,6 +155,7 @@ export default function ClimateSection() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {forecast.map((day, index) => {
               const weather = weatherCodeToLabel(day.weatherCode);
+              const packingSuggestion = getPackingSuggestion(day);
               return (
                 <motion.article
                   key={day.date}
@@ -161,6 +185,14 @@ export default function ClimateSection() {
                     <p className="inline-flex items-center gap-2 text-white/75 ml-0">
                       <Wind className="w-4 h-4 text-white/80" />
                       {Math.round(day.windKmh)} km/h
+                    </p>
+                  </div>
+                  <div className="mt-3 border-t border-white/15 pt-2">
+                    <p className="text-[11px] uppercase tracking-[0.12em] text-amber-200/80 font-mono">
+                      Sugerencia
+                    </p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-white/75 font-body">
+                      {packingSuggestion}
                     </p>
                   </div>
                 </motion.article>
