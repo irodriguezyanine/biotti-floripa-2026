@@ -95,6 +95,16 @@ type OracionStage = "cover" | "lines" | "final";
 type BonusActivityStage = "intro" | "video" | "final";
 type NovioVoteStep = "handoff" | "vote";
 type NovioStage = "intro" | "voting" | "confesiones" | "summary";
+type ManuelStage = "intro" | "sorteo" | "bracket" | "final-screen";
+type ManuelMatchPhase = "winners-r1" | "winners-final" | "losers-r1" | "losers-final" | "grand-final";
+type ManuelTeam = { name: string; players: [string, string] };
+type ManuelMatch = {
+  id: string;
+  teamA: string | null;
+  teamB: string | null;
+  winner: string | null;
+  phase: ManuelMatchPhase;
+};
 type OracionLine = {
   speaker: "novio" | "todos";
   text: string;
@@ -177,11 +187,11 @@ const ACTIVITIES: Activity[] = [
   {
     id: "actividad-manuel",
     title: "Actividad Manuel",
-    subtitle: "Bloque sorpresa",
+    subtitle: "Campeonato Spikeball",
     day: "Viernes 22 Mayo",
     time: "21:30 - 22:00",
     location: "Cuartel base · Desafío relámpago",
-    password: "BiottiVIP",
+    password: "Mika123",
     requiresPassword: true,
     icon: Crown,
     accentClass: "text-amber-300",
@@ -402,6 +412,18 @@ const NOVIO_CONFESIONES: NovioConfesion[] = [
     prompt:
       "¿Qué pasó en el gym de Talca? Cuenta sobre las fotos que mandabas a las bataclanas y cómo se enteró Cata.",
   },
+];
+
+const MANUEL_PLAYERS = [
+  "Biotti",
+  "Nacho",
+  "Manuel",
+  "Momo",
+  "Javier Vargas",
+  "Mandiola",
+  "Pedro",
+  "Seba",
+  "Felipe",
 ];
 
 const NOVIA_QUESTIONS: NoviaQuestion[] = [
@@ -685,6 +707,11 @@ export default function ActivitiesSection() {
     NOVIO_QUESTIONS.map(() => NOVIO_PLAYERS.map(() => null))
   );
   const [novioConfesionIdx, setNovioConfesionIdx] = useState(0);
+  const [manuelStage, setManuelStage] = useState<ManuelStage>("intro");
+  const [manuelComodin, setManuelComodin] = useState<string | null>(null);
+  const [manuelTeams, setManuelTeams] = useState<ManuelTeam[]>([]);
+  const [manuelMatches, setManuelMatches] = useState<ManuelMatch[]>([]);
+  const [manuelSorteoRevealed, setManuelSorteoRevealed] = useState(0);
 
   const INTRO_VIDEO_URL = "/videos/vale/Introduccion.mp4";
   const BONUS_ACTIVITY_VIDEO_URL = "/videos/vale/video-bonus-celedon.mp4";
@@ -927,6 +954,108 @@ export default function ActivitiesSection() {
     setNovioConfesionIdx(0);
   }
 
+  function resetManuelState() {
+    setManuelStage("intro");
+    setManuelComodin(null);
+    setManuelTeams([]);
+    setManuelMatches([]);
+    setManuelSorteoRevealed(0);
+  }
+
+  function shuffleArray<T>(arr: T[]): T[] {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function onManuelSetComodin(player: string) {
+    setManuelComodin(player);
+    const remaining = shuffleArray(MANUEL_PLAYERS.filter((p) => p !== player));
+    const teams: ManuelTeam[] = [
+      { name: "Equipo A", players: [remaining[0], remaining[1]] },
+      { name: "Equipo B", players: [remaining[2], remaining[3]] },
+      { name: "Equipo C", players: [remaining[4], remaining[5]] },
+      { name: "Equipo D", players: [remaining[6], remaining[7]] },
+    ];
+    setManuelTeams(teams);
+    setManuelSorteoRevealed(0);
+  }
+
+  function onManuelSortearComodinRandom() {
+    const randomIdx = Math.floor(Math.random() * MANUEL_PLAYERS.length);
+    onManuelSetComodin(MANUEL_PLAYERS[randomIdx]);
+  }
+
+  function onManuelStartBracket() {
+    const matches: ManuelMatch[] = [
+      { id: "wr1-1", teamA: manuelTeams[0]?.name ?? null, teamB: manuelTeams[1]?.name ?? null, winner: null, phase: "winners-r1" },
+      { id: "wr1-2", teamA: manuelTeams[2]?.name ?? null, teamB: manuelTeams[3]?.name ?? null, winner: null, phase: "winners-r1" },
+      { id: "lr1", teamA: null, teamB: null, winner: null, phase: "losers-r1" },
+      { id: "wf", teamA: null, teamB: null, winner: null, phase: "winners-final" },
+      { id: "lf", teamA: null, teamB: null, winner: null, phase: "losers-final" },
+      { id: "gf", teamA: null, teamB: null, winner: null, phase: "grand-final" },
+    ];
+    setManuelMatches(matches);
+    setManuelStage("bracket");
+  }
+
+  function onManuelMarkWinner(matchId: string, winnerTeam: string) {
+    setManuelMatches((prev) => {
+      const next = prev.map((m) => ({ ...m }));
+      const matchIdx = next.findIndex((m) => m.id === matchId);
+      if (matchIdx === -1) return prev;
+      next[matchIdx].winner = winnerTeam;
+
+      const match = next[matchIdx];
+      const loser = match.teamA === winnerTeam ? match.teamB : match.teamA;
+
+      if (match.phase === "winners-r1") {
+        const wr1First = next.find((m) => m.id === "wr1-1");
+        const wr1Second = next.find((m) => m.id === "wr1-2");
+        if (wr1First?.winner && wr1Second?.winner) {
+          const wf = next.find((m) => m.id === "wf");
+          if (wf) { wf.teamA = wr1First.winner; wf.teamB = wr1Second.winner; }
+          const lr1 = next.find((m) => m.id === "lr1");
+          if (lr1) {
+            const loser1 = wr1First.teamA === wr1First.winner ? wr1First.teamB : wr1First.teamA;
+            const loser2 = wr1Second.teamA === wr1Second.winner ? wr1Second.teamB : wr1Second.teamA;
+            lr1.teamA = loser1;
+            lr1.teamB = loser2;
+          }
+        }
+      }
+
+      if (match.phase === "winners-final") {
+        const gf = next.find((m) => m.id === "gf");
+        if (gf) gf.teamA = winnerTeam;
+        const lf = next.find((m) => m.id === "lf");
+        if (lf) lf.teamB = loser;
+      }
+
+      if (match.phase === "losers-r1") {
+        const lf = next.find((m) => m.id === "lf");
+        if (lf) lf.teamA = winnerTeam;
+      }
+
+      if (match.phase === "losers-final") {
+        const gf = next.find((m) => m.id === "gf");
+        if (gf) gf.teamB = winnerTeam;
+      }
+
+      return next;
+    });
+  }
+
+  const manuelChampion = manuelMatches.find((m) => m.id === "gf")?.winner ?? null;
+  const manuelRunnerUp = manuelChampion
+    ? (manuelMatches.find((m) => m.id === "gf")?.teamA === manuelChampion
+        ? manuelMatches.find((m) => m.id === "gf")?.teamB
+        : manuelMatches.find((m) => m.id === "gf")?.teamA) ?? null
+    : null;
+
   function resetActivityState(activityId: string) {
     if (activityId === "preguntas-novia") {
       resetPreguntasNoviaState();
@@ -950,6 +1079,10 @@ export default function ActivitiesSection() {
     }
     if (activityId === "actividad-novio") {
       resetNovioActivityState();
+      return;
+    }
+    if (activityId === "actividad-manuel") {
+      resetManuelState();
     }
   }
 
@@ -2955,6 +3088,335 @@ export default function ActivitiesSection() {
                           className="inline-flex items-center gap-2 rounded-xl border border-fuchsia-300/45 bg-fuchsia-500/10 px-4 py-2 text-fuchsia-100 font-body hover:bg-fuchsia-500/20"
                         >
                           Reiniciar juego
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : activeActivity.id === "actividad-manuel" ? (
+                <div className="space-y-4">
+                  {manuelStage === "intro" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-amber-950/55 via-sky-950/70 to-slate-950/75 p-5 sm:p-7 shadow-[0_20px_55px_rgba(0,0,0,0.4)]">
+                      <div className="rounded-2xl border border-amber-300/35 bg-amber-500/10 p-5 sm:p-6">
+                        <p className="text-xs font-mono uppercase tracking-[0.2em] text-amber-200/90">
+                          Actividad Manuel
+                        </p>
+                        <h4 className="mt-3 font-display text-4xl sm:text-5xl text-white leading-tight">
+                          Campeonato Spikeball
+                        </h4>
+                        <p className="mt-4 text-white/90 font-body text-sm sm:text-base leading-relaxed">
+                          Torneo oficial de spikeball con formato de doble eliminación.
+                          Se forman 4 parejas al azar + 1 comodín que puede entrar
+                          por el jugador más cansado o reemplazando al perdedor con peor diferencia.
+                        </p>
+                        <div className="mt-4 rounded-xl border border-white/15 bg-black/20 px-4 py-3">
+                          <p className="text-xs font-mono uppercase tracking-[0.16em] text-miami-blue/90">
+                            Reglas
+                          </p>
+                          <ul className="mt-2 space-y-1 text-sm text-white/85 font-body list-disc list-inside">
+                            <li>Partidos a 21 puntos</li>
+                            <li>Winners Bracket + Losers Bracket</li>
+                            <li>Grand Final: ganador de winners vs ganador de losers</li>
+                            <li>El comodín entra cuando se necesite</li>
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={closeActivityModal}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Cerrar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setManuelStage("sorteo")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-amber-300/55 bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-rose-500/15 px-4 py-2 text-amber-100 font-body font-semibold hover:brightness-110"
+                        >
+                          Comenzar sorteo
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {manuelStage === "sorteo" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-slate-900/75 to-amber-950/50 p-5 sm:p-7 shadow-[0_20px_55px_rgba(0,0,0,0.35)]">
+                      {!manuelComodin ? (
+                        <div>
+                          <p className="text-xs font-mono uppercase tracking-[0.18em] text-white/65">
+                            Paso 1 · Definir comodín
+                          </p>
+                          <h4 className="mt-2 font-display text-3xl sm:text-4xl text-white">
+                            ¿Quién será el comodín?
+                          </h4>
+                          <p className="mt-2 text-white/80 font-body text-sm">
+                            Elige un voluntario o sortéalo al azar.
+                          </p>
+                          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {MANUEL_PLAYERS.map((player) => (
+                              <button
+                                key={`comodin-pick-${player}`}
+                                type="button"
+                                onClick={() => onManuelSetComodin(player)}
+                                className="rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-sm text-white/85 font-body hover:bg-white/10 transition-colors"
+                              >
+                                {player}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="mt-4 flex items-center justify-between gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setManuelStage("intro")}
+                              className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                            >
+                              Anterior
+                            </button>
+                            <button
+                              type="button"
+                              onClick={onManuelSortearComodinRandom}
+                              className="inline-flex items-center gap-2 rounded-xl border border-fuchsia-300/55 bg-fuchsia-500/15 px-4 py-2 text-fuchsia-100 font-body hover:bg-fuchsia-500/25"
+                            >
+                              Sortear al azar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-xs font-mono uppercase tracking-[0.18em] text-white/65">
+                            Paso 2 · Parejas sorteadas
+                          </p>
+                          <div className="mt-3 rounded-2xl border border-amber-300/35 bg-amber-500/10 p-4 text-center">
+                            <p className="text-xs font-mono uppercase tracking-[0.16em] text-amber-200/85">
+                              Comodín
+                            </p>
+                            <h5 className="mt-1 font-display text-3xl text-amber-100">{manuelComodin}</h5>
+                          </div>
+                          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {manuelTeams.map((team, teamIdx) => (
+                              <motion.div
+                                key={`team-${team.name}`}
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={
+                                  teamIdx < manuelSorteoRevealed
+                                    ? { opacity: 1, y: 0 }
+                                    : { opacity: 0, y: 12 }
+                                }
+                                transition={{ duration: 0.35, delay: 0.1 }}
+                                className="rounded-2xl border border-miami-blue/35 bg-miami-blue/10 p-4"
+                              >
+                                <p className="text-xs font-mono uppercase tracking-[0.16em] text-miami-blue/90">
+                                  {team.name}
+                                </p>
+                                <p className="mt-2 text-white font-body font-semibold">
+                                  {team.players[0]} + {team.players[1]}
+                                </p>
+                              </motion.div>
+                            ))}
+                          </div>
+                          <div className="mt-4 flex items-center justify-between gap-3">
+                            <button
+                              type="button"
+                              onClick={() => { setManuelComodin(null); setManuelTeams([]); setManuelSorteoRevealed(0); }}
+                              className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                            >
+                              Re-sortear
+                            </button>
+                            {manuelSorteoRevealed < manuelTeams.length ? (
+                              <button
+                                type="button"
+                                onClick={() => setManuelSorteoRevealed((prev) => prev + 1)}
+                                className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-miami-blue/15 px-4 py-2 text-miami-blue font-body hover:bg-miami-blue/25"
+                              >
+                                Revelar siguiente pareja
+                                <ChevronRight className="h-4 w-4" />
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={onManuelStartBracket}
+                                className="inline-flex items-center gap-2 rounded-xl border border-emerald-300/55 bg-emerald-500/15 px-4 py-2 text-emerald-100 font-body hover:bg-emerald-500/25"
+                              >
+                                Comenzar torneo
+                                <ChevronRight className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {manuelStage === "bracket" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-slate-900/80 to-sky-950/70 p-4 sm:p-6 shadow-[0_20px_55px_rgba(0,0,0,0.35)]">
+                      <h4 className="font-display text-3xl sm:text-4xl text-white">Bracket del torneo</h4>
+                      <p className="mt-1 text-white/70 font-body text-sm">
+                        Comodín: <span className="text-amber-200 font-semibold">{manuelComodin}</span> — entra por el más cansado o reemplaza al perdedor con peor diferencia.
+                      </p>
+
+                      <div className="mt-4 space-y-4">
+                        {(["winners-r1", "losers-r1", "winners-final", "losers-final", "grand-final"] as ManuelMatchPhase[]).map((phase) => {
+                          const phaseMatches = manuelMatches.filter((m) => m.phase === phase);
+                          if (phaseMatches.length === 0) return null;
+                          const phaseLabels: Record<ManuelMatchPhase, string> = {
+                            "winners-r1": "Winners Ronda 1",
+                            "winners-final": "Winners Final",
+                            "losers-r1": "Losers Ronda 1",
+                            "losers-final": "Losers Final",
+                            "grand-final": "Grand Final",
+                          };
+                          const phaseColors: Record<ManuelMatchPhase, string> = {
+                            "winners-r1": "border-miami-blue/35 bg-miami-blue/10",
+                            "winners-final": "border-emerald-300/35 bg-emerald-500/10",
+                            "losers-r1": "border-rose-300/35 bg-rose-500/10",
+                            "losers-final": "border-amber-300/35 bg-amber-500/10",
+                            "grand-final": "border-fuchsia-300/40 bg-fuchsia-500/15",
+                          };
+                          return (
+                            <div key={`phase-${phase}`} className={cn("rounded-2xl border p-4", phaseColors[phase])}>
+                              <p className="text-xs font-mono uppercase tracking-[0.16em] text-white/75">
+                                {phaseLabels[phase]}
+                              </p>
+                              <div className="mt-3 space-y-3">
+                                {phaseMatches.map((match) => {
+                                  const ready = match.teamA && match.teamB;
+                                  return (
+                                    <div key={match.id} className="rounded-xl border border-white/15 bg-black/20 p-3">
+                                      {!ready ? (
+                                        <p className="text-sm text-white/50 font-body">Esperando equipos...</p>
+                                      ) : (
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                          <button
+                                            type="button"
+                                            disabled={!!match.winner}
+                                            onClick={() => onManuelMarkWinner(match.id, match.teamA!)}
+                                            className={cn(
+                                              "flex-1 rounded-lg border px-3 py-2 text-sm font-body transition-colors",
+                                              match.winner === match.teamA
+                                                ? "border-emerald-300/60 bg-emerald-500/20 text-emerald-100 font-semibold"
+                                                : match.winner
+                                                  ? "border-white/10 bg-white/5 text-white/40"
+                                                  : "border-white/25 bg-white/5 text-white/85 hover:bg-white/10"
+                                            )}
+                                          >
+                                            {match.teamA}
+                                            {match.winner === match.teamA && " ✓"}
+                                          </button>
+                                          <span className="text-xs text-white/50 font-mono text-center">vs</span>
+                                          <button
+                                            type="button"
+                                            disabled={!!match.winner}
+                                            onClick={() => onManuelMarkWinner(match.id, match.teamB!)}
+                                            className={cn(
+                                              "flex-1 rounded-lg border px-3 py-2 text-sm font-body transition-colors",
+                                              match.winner === match.teamB
+                                                ? "border-emerald-300/60 bg-emerald-500/20 text-emerald-100 font-semibold"
+                                                : match.winner
+                                                  ? "border-white/10 bg-white/5 text-white/40"
+                                                  : "border-white/25 bg-white/5 text-white/85 hover:bg-white/10"
+                                            )}
+                                          >
+                                            {match.teamB}
+                                            {match.winner === match.teamB && " ✓"}
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setManuelStage("sorteo")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        {manuelChampion && (
+                          <button
+                            type="button"
+                            onClick={() => setManuelStage("final-screen")}
+                            className="inline-flex items-center gap-2 rounded-xl border border-emerald-300/55 bg-emerald-500/15 px-4 py-2 text-emerald-100 font-body hover:bg-emerald-500/25"
+                          >
+                            Ver campeón
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {manuelStage === "final-screen" && (
+                    <div className="rounded-3xl border border-amber-300/40 bg-gradient-to-br from-amber-900/35 via-fuchsia-950/40 to-sky-950/70 p-5 sm:p-7 text-center">
+                      <p className="text-xs font-mono uppercase tracking-[0.2em] text-amber-200/90">
+                        Campeonato Spikeball
+                      </p>
+                      <motion.h4
+                        className="mt-3 font-display text-5xl sm:text-7xl text-amber-100 [text-shadow:0_0_22px_rgba(255,206,90,0.4)]"
+                        animate={{ scale: [1, 1.04, 1] }}
+                        transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+                      >
+                        {manuelChampion}
+                      </motion.h4>
+                      <p className="mt-2 text-white/90 font-body text-lg">Campeones del torneo</p>
+                      {manuelRunnerUp && (
+                        <p className="mt-1 text-white/70 font-body text-sm">
+                          Subcampeón: <span className="text-fuchsia-200 font-semibold">{manuelRunnerUp}</span>
+                        </p>
+                      )}
+
+                      <div className="mt-6 overflow-x-auto rounded-2xl border border-white/20 bg-black/25 text-left">
+                        <table className="min-w-[480px] w-full">
+                          <thead>
+                            <tr className="border-b border-white/20 bg-white/10">
+                              <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">Fase</th>
+                              <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">Enfrentamiento</th>
+                              <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">Ganador</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {manuelMatches.filter((m) => m.winner).map((match) => {
+                              const phaseLabels: Record<ManuelMatchPhase, string> = {
+                                "winners-r1": "Winners R1",
+                                "winners-final": "Winners Final",
+                                "losers-r1": "Losers R1",
+                                "losers-final": "Losers Final",
+                                "grand-final": "Grand Final",
+                              };
+                              return (
+                                <tr key={`result-${match.id}`} className="border-b border-white/10">
+                                  <td className="px-3 py-2 text-sm text-white/75 font-body">{phaseLabels[match.phase]}</td>
+                                  <td className="px-3 py-2 text-sm text-white/85 font-body">{match.teamA} vs {match.teamB}</td>
+                                  <td className="px-3 py-2 text-sm text-emerald-200 font-body font-semibold">{match.winner}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setManuelStage("bracket")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={resetManuelState}
+                          className="inline-flex items-center gap-2 rounded-xl border border-fuchsia-300/45 bg-fuchsia-500/10 px-4 py-2 text-fuchsia-100 font-body hover:bg-fuchsia-500/20"
+                        >
+                          Reiniciar torneo
                         </button>
                       </div>
                     </div>
