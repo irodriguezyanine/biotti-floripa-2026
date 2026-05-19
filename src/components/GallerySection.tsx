@@ -1,6 +1,15 @@
 "use client";
 
-import { FormEvent, MouseEvent, TouchEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  FormEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+  MouseEvent,
+  TouchEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Camera,
@@ -12,6 +21,9 @@ import {
   ImagePlus,
   Loader2,
   MessageSquare,
+  Pause,
+  Play,
+  Sparkles,
   Trash2,
   Upload,
   User,
@@ -41,10 +53,17 @@ type SelectedPreview = {
   url: string;
 };
 
+type AutoplaySpeedMode = "slow" | "normal" | "fast";
+
 const OWNERSHIP_STORAGE_KEY = "biotti-gallery-ownership-v1";
 const MAX_UPLOAD_TARGET_BYTES = 3.8 * 1024 * 1024;
 const MAX_IMAGE_DIMENSION = 2200;
 const MAX_FILES_PER_BATCH = 50;
+const CAROUSEL_SPEEDS: Record<AutoplaySpeedMode, number> = {
+  slow: 24,
+  normal: 42,
+  fast: 68,
+};
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("es-CL", {
@@ -102,6 +121,9 @@ export default function GallerySection() {
   });
   const viewerTouchStartXRef = useRef<number | null>(null);
   const [isCarouselPaused, setIsCarouselPaused] = useState(false);
+  const [isAutoplayEnabled, setIsAutoplayEnabled] = useState(true);
+  const [carouselSpeedMode, setCarouselSpeedMode] = useState<AutoplaySpeedMode>("normal");
+  const [activeCarouselIndex, setActiveCarouselIndex] = useState(0);
 
   const canSubmit = useMemo(() => {
     return !uploading && selectedFiles.length > 0 && uploaderName.trim().length > 0;
@@ -131,6 +153,8 @@ export default function GallerySection() {
     viewerIndex !== null && viewerIndex >= 0 && viewerIndex < imagesWithOwnership.length
       ? imagesWithOwnership[viewerIndex]
       : null;
+  const autoplaySpeed = CAROUSEL_SPEEDS[carouselSpeedMode];
+  const canUseInfiniteCarousel = imagesWithOwnership.length > 1;
 
   function onSelectFiles(files: FileList | null) {
     if (!files) return;
@@ -167,6 +191,35 @@ export default function GallerySection() {
   function onOpenViewer(imageId: string) {
     const idx = imagesWithOwnership.findIndex((item) => item.id === imageId);
     if (idx >= 0) setViewerIndex(idx);
+  }
+
+  function getCarouselStepSize(container: HTMLDivElement) {
+    const card = container.firstElementChild as HTMLElement | null;
+    if (!card) return container.clientWidth * 0.82;
+    const gap = 16;
+    return card.offsetWidth + gap;
+  }
+
+  function onCarouselStep(direction: "prev" | "next") {
+    const container = carouselRef.current;
+    if (!container) return;
+    const distance = getCarouselStepSize(container) * (direction === "next" ? 1 : -1);
+    container.scrollBy({ left: distance, behavior: "smooth" });
+    setIsCarouselPaused(true);
+    window.setTimeout(() => setIsCarouselPaused(false), 1400);
+  }
+
+  function onToggleAutoplay() {
+    setIsAutoplayEnabled((previous) => !previous);
+    setIsCarouselPaused(false);
+  }
+
+  function onCycleSpeedMode() {
+    setCarouselSpeedMode((previous) => {
+      if (previous === "slow") return "normal";
+      if (previous === "normal") return "fast";
+      return "slow";
+    });
   }
 
   function onCarouselMouseDown(event: MouseEvent<HTMLDivElement>) {
@@ -216,15 +269,38 @@ export default function GallerySection() {
     setIsCarouselPaused(false);
   }
 
+  function onCarouselKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      onCarouselStep("next");
+      return;
+    }
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      onCarouselStep("prev");
+      return;
+    }
+    if (event.key === " ") {
+      event.preventDefault();
+      onToggleAutoplay();
+    }
+  }
+
   function onCarouselScroll() {
     const container = carouselRef.current;
-    if (!container || imagesWithOwnership.length <= 1) return;
-    const half = container.scrollWidth / 2;
-    if (container.scrollLeft >= half) {
-      container.scrollLeft -= half;
-    } else if (container.scrollLeft <= 0) {
-      container.scrollLeft += half;
+    if (!container || imagesWithOwnership.length === 0) return;
+    const logicalLength = imagesWithOwnership.length;
+    if (logicalLength > 1) {
+      const half = container.scrollWidth / 2;
+      if (container.scrollLeft >= half) {
+        container.scrollLeft -= half;
+      } else if (container.scrollLeft <= 0) {
+        container.scrollLeft += half;
+      }
     }
+    const step = getCarouselStepSize(container);
+    const computedIndex = Math.round(container.scrollLeft / Math.max(step, 1)) % logicalLength;
+    setActiveCarouselIndex(((computedIndex % logicalLength) + logicalLength) % logicalLength);
   }
 
   function onCloseViewer() {
@@ -300,16 +376,16 @@ export default function GallerySection() {
 
   useEffect(() => {
     const container = carouselRef.current;
-    if (!container || imagesWithOwnership.length <= 1) return;
+    if (!container || !canUseInfiniteCarousel) return;
 
     let animationId = 0;
-    const speedPxPerSecond = 42;
+    const speedPxPerSecond = autoplaySpeed;
 
     const tick = (timestamp: number) => {
       const last = carouselLastTsRef.current ?? timestamp;
       const deltaSeconds = Math.min((timestamp - last) / 1000, 0.05);
       carouselLastTsRef.current = timestamp;
-      if (!isCarouselPaused) {
+      if (!isCarouselPaused && isAutoplayEnabled) {
         container.scrollLeft += speedPxPerSecond * deltaSeconds;
         const half = container.scrollWidth / 2;
         if (container.scrollLeft >= half) {
@@ -325,7 +401,7 @@ export default function GallerySection() {
       window.cancelAnimationFrame(animationId);
       carouselLastTsRef.current = null;
     };
-  }, [imagesWithOwnership.length, isCarouselPaused]);
+  }, [autoplaySpeed, canUseInfiniteCarousel, isAutoplayEnabled, isCarouselPaused]);
 
   useEffect(() => {
     if (viewerIndex === null) return;
@@ -337,6 +413,16 @@ export default function GallerySection() {
     window.addEventListener("keydown", handleKeydown);
     return () => window.removeEventListener("keydown", handleKeydown);
   }, [viewerIndex, imagesWithOwnership.length]);
+
+  useEffect(() => {
+    const container = carouselRef.current;
+    if (!container || !canUseInfiniteCarousel) return;
+    const half = container.scrollWidth / 2;
+    if (half > 0) {
+      container.scrollLeft = half / 2;
+      setActiveCarouselIndex(0);
+    }
+  }, [canUseInfiniteCarousel, imagesWithOwnership.length]);
 
   async function optimizeImageForUpload(file: File) {
     if (file.size <= MAX_UPLOAD_TARGET_BYTES) return file;
@@ -763,87 +849,182 @@ export default function GallerySection() {
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-white/70 font-body text-sm">
-                Últimas subidas · carrusel automático
-              </p>
-            </div>
-            <div
-              ref={carouselRef}
-              onScroll={onCarouselScroll}
-              className="flex gap-4 overflow-x-auto pb-2 cursor-grab active:cursor-grabbing [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden touch-pan-x"
-              onMouseDown={onCarouselMouseDown}
-              onMouseMove={onCarouselMouseMove}
-              onMouseUp={onCarouselMouseUpOrLeave}
-              onMouseLeave={onCarouselMouseUpOrLeave}
-              onTouchStart={onCarouselTouchStart}
-              onTouchMove={onCarouselTouchMove}
-              onTouchEnd={onCarouselTouchEndOrCancel}
-              onTouchCancel={onCarouselTouchEndOrCancel}
-            >
-              {carouselItems.map((image, idx) => (
-                <motion.article
-                  key={`${image.id}-${idx}`}
-                  initial={{ opacity: 0, y: 14 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  className="glass-card rounded-2xl overflow-hidden border border-white/15 shrink-0 snap-start w-[82vw] sm:w-[52vw] lg:w-[32vw] xl:w-[28vw]"
+            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-white/85">
+                  <Sparkles className="h-3.5 w-3.5 text-miami-blue" />
+                  Loop infinito
+                </span>
+                <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-white/80">
+                  {imagesWithOwnership.length} fotos
+                </span>
+                <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-white/80">
+                  Estado: {isAutoplayEnabled ? "Auto" : "Manual"}
+                </span>
+                <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-white/80">
+                  Velocidad: {carouselSpeedMode}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onCarouselStep("prev")}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white/90 transition hover:bg-white/20"
+                  aria-label="Retroceder carrusel"
+                  title="Retroceder"
                 >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (carouselDragStateRef.current.hasMoved) {
-                        carouselDragStateRef.current.hasMoved = false;
-                        return;
-                      }
-                      onOpenViewer(image.id);
-                    }}
-                    className="aspect-[4/3] w-full bg-black/30 text-left"
-                    aria-label={`Ver foto en pantalla completa de ${image.uploadedBy}`}
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={onToggleAutoplay}
+                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-3 text-xs font-mono text-white/90 transition hover:bg-white/20"
+                  aria-label={isAutoplayEnabled ? "Pausar autoplay" : "Reanudar autoplay"}
+                  title={isAutoplayEnabled ? "Pausar autoplay" : "Reanudar autoplay"}
+                >
+                  {isAutoplayEnabled ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                  {isAutoplayEnabled ? "Pausa" : "Play"}
+                </button>
+                <button
+                  type="button"
+                  onClick={onCycleSpeedMode}
+                  className="inline-flex h-9 items-center justify-center rounded-full border border-white/30 bg-white/10 px-3 text-xs font-mono text-white/90 transition hover:bg-white/20"
+                  aria-label="Cambiar velocidad del carrusel"
+                  title="Cambiar velocidad"
+                >
+                  {carouselSpeedMode === "slow"
+                    ? "Lento"
+                    : carouselSpeedMode === "normal"
+                      ? "Normal"
+                      : "Rápido"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onCarouselStep("next")}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white/90 transition hover:bg-white/20"
+                  aria-label="Avanzar carrusel"
+                  title="Avanzar"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-sky-950/85 to-transparent" />
+              <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-sky-950/85 to-transparent" />
+              <div
+                ref={carouselRef}
+                tabIndex={0}
+                role="region"
+                aria-label="Carrusel colaborativo de fotos"
+                onKeyDown={onCarouselKeyDown}
+                onScroll={onCarouselScroll}
+                className="flex gap-4 overflow-x-auto pb-3 pt-1 pl-1 pr-1 cursor-grab active:cursor-grabbing [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden touch-pan-x outline-none focus-visible:ring-2 focus-visible:ring-miami-blue/70"
+                onMouseDown={onCarouselMouseDown}
+                onMouseMove={onCarouselMouseMove}
+                onMouseUp={onCarouselMouseUpOrLeave}
+                onMouseLeave={onCarouselMouseUpOrLeave}
+                onTouchStart={onCarouselTouchStart}
+                onTouchMove={onCarouselTouchMove}
+                onTouchEnd={onCarouselTouchEndOrCancel}
+                onTouchCancel={onCarouselTouchEndOrCancel}
+              >
+                {carouselItems.map((image, idx) => (
+                  <article
+                    key={`${image.id}-${idx}`}
+                    className="group relative overflow-hidden rounded-2xl border border-white/20 bg-slate-950/60 shadow-[0_10px_40px_rgba(2,132,199,0.18)] backdrop-blur-sm transition duration-300 hover:border-miami-blue/50 hover:shadow-[0_16px_48px_rgba(6,182,212,0.22)] shrink-0 w-[84vw] sm:w-[55vw] md:w-[44vw] lg:w-[31vw] xl:w-[26vw]"
                   >
-                    <img
-                      src={image.url}
-                      alt={`Foto subida por ${image.uploadedBy}`}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  </button>
-                  <div className="p-4 space-y-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="inline-flex items-center gap-2 text-white font-body font-semibold min-w-0">
-                        <User className="w-4 h-4 text-miami-blue shrink-0" />
-                        <span className="truncate">{image.uploadedBy}</span>
-                      </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (carouselDragStateRef.current.hasMoved) {
+                          carouselDragStateRef.current.hasMoved = false;
+                          return;
+                        }
+                        onOpenViewer(image.id);
+                      }}
+                      className="relative aspect-[16/10] w-full bg-black/30 text-left"
+                      aria-label={`Ver foto en pantalla completa de ${image.uploadedBy}`}
+                    >
+                      <img
+                        src={image.url}
+                        alt={`Foto subida por ${image.uploadedBy}`}
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                        loading="lazy"
+                        decoding="async"
+                        draggable={false}
+                      />
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
+                      <div className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full border border-white/25 bg-black/45 px-2 py-1 text-[11px] font-mono text-white/90">
+                        {((idx % imagesWithOwnership.length) + 1).toString().padStart(2, "0")} /{" "}
+                        {imagesWithOwnership.length.toString().padStart(2, "0")}
+                      </div>
                       {image.isOwned && (
-                        <button
-                          type="button"
-                          onClick={() => onDeleteImage(image.id)}
-                          disabled={deletingId === image.id}
-                          className="inline-flex items-center gap-1 rounded-lg border border-rose-400/40 bg-rose-500/10 px-2 py-1 text-[11px] text-rose-200 hover:bg-rose-500/20 disabled:opacity-60"
-                        >
-                          {deletingId === image.id ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-3 h-3" />
-                          )}
-                          Eliminar
-                        </button>
+                        <div className="absolute right-3 top-3 inline-flex items-center rounded-full border border-emerald-300/40 bg-emerald-500/20 px-2 py-1 text-[11px] font-mono text-emerald-100">
+                          Tu foto
+                        </div>
+                      )}
+                    </button>
+                    <div className="space-y-2 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="inline-flex min-w-0 items-center gap-2 font-body font-semibold text-white">
+                          <User className="h-4 w-4 shrink-0 text-miami-blue" />
+                          <span className="truncate">{image.uploadedBy}</span>
+                        </p>
+                        {image.isOwned && (
+                          <button
+                            type="button"
+                            onClick={() => onDeleteImage(image.id)}
+                            disabled={deletingId === image.id}
+                            className="inline-flex items-center gap-1 rounded-lg border border-rose-400/40 bg-rose-500/10 px-2 py-1 text-[11px] text-rose-200 transition hover:bg-rose-500/20 disabled:opacity-60"
+                          >
+                            {deletingId === image.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3 w-3" />
+                            )}
+                            Eliminar
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-xs font-mono text-white/60">{formatDate(image.uploadedAt)}</p>
+                      {image.message ? (
+                        <p className="inline-flex items-start gap-2 text-sm font-body text-white/85">
+                          <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-neon-pink" />
+                          <span className="block max-h-10 overflow-hidden">{image.message}</span>
+                        </p>
+                      ) : (
+                        <p className="text-sm font-body text-white/40">Sin mensaje</p>
                       )}
                     </div>
-                    <p className="text-xs text-white/60 font-mono">
-                      {formatDate(image.uploadedAt)}
-                    </p>
-                    {image.message ? (
-                      <p className="text-sm text-white/85 font-body inline-flex items-start gap-2">
-                        <MessageSquare className="w-4 h-4 mt-0.5 text-neon-pink shrink-0" />
-                        <span>{image.message}</span>
-                      </p>
-                    ) : (
-                      <p className="text-sm text-white/40 font-body">Sin mensaje</p>
+                  </article>
+                ))}
+              </div>
+              <div className="mt-3 flex items-center justify-center gap-1.5">
+                {imagesWithOwnership.map((image, idx) => (
+                  <button
+                    key={`dot-${image.id}`}
+                    type="button"
+                    onClick={() => {
+                      const container = carouselRef.current;
+                      if (!container) return;
+                      const step = getCarouselStepSize(container);
+                      container.scrollTo({
+                        left: step * idx,
+                        behavior: "smooth",
+                      });
+                    }}
+                    className={cn(
+                      "h-2 rounded-full transition-all",
+                      idx === activeCarouselIndex
+                        ? "w-8 bg-miami-blue shadow-[0_0_14px_rgba(0,255,255,0.8)]"
+                        : "w-2 bg-white/35 hover:bg-white/60"
                     )}
-                  </div>
-                </motion.article>
-              ))}
+                    aria-label={`Ir a foto ${idx + 1}`}
+                    title={`Ir a foto ${idx + 1}`}
+                  />
+                ))}
+              </div>
             </div>
           </>
         )}
