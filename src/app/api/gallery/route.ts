@@ -44,6 +44,16 @@ export async function GET() {
     const cloudinary = getCloudinary();
     const folder = getGalleryFolder();
     const candidates = getCloudinaryConfigCandidates();
+    let bestImages: Array<{
+      id: string;
+      url: string;
+      width: number;
+      height: number;
+      uploadedBy: string;
+      message: string;
+      uploadedAt: string;
+    }> = [];
+    let bestWarning: string | undefined;
 
     for (const candidate of candidates) {
       applyCloudinaryConfigCandidate(candidate);
@@ -76,37 +86,44 @@ export async function GET() {
         }
       }
 
-      if (resources.length > 0 || localDiagnostics.length === 0) {
-        const images = resources
-          .filter((resource) => !isCrewProfileAsset(resource))
-          .map((resource) => ({
-            id: resource.public_id,
-            url: resource.secure_url,
-            width: resource.width,
-            height: resource.height,
-            uploadedBy: resource.context?.custom?.uploader || "Anónimo",
-            message: resource.context?.custom?.message || "",
-            uploadedAt: toIsoDate(
-              resource.context?.custom?.uploaded_at || resource.created_at
-            ),
-          }))
-          .sort(
-            (a, b) =>
-              new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
-          );
+      const images = resources
+        .filter((resource) => !isCrewProfileAsset(resource))
+        .map((resource) => ({
+          id: resource.public_id,
+          url: resource.secure_url,
+          width: resource.width,
+          height: resource.height,
+          uploadedBy: resource.context?.custom?.uploader || "Anónimo",
+          message: resource.context?.custom?.message || "",
+          uploadedAt: toIsoDate(
+            resource.context?.custom?.uploaded_at || resource.created_at
+          ),
+        }))
+        .sort(
+          (a, b) =>
+            new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+        );
 
-        return NextResponse.json({
-          images,
-          warning:
-            localDiagnostics.length > 0
-              ? `${localDiagnostics.join(" | ")} | config: ${candidate.source}:${candidate.cloudName}`
-              : undefined,
-        });
+      if (images.length > bestImages.length) {
+        bestImages = images;
+        bestWarning =
+          localDiagnostics.length > 0
+            ? `${localDiagnostics.join(" | ")} | config: ${candidate.source}:${candidate.cloudName}`
+            : undefined;
       }
 
-      diagnostics.push(
-        `${candidate.source}:${candidate.cloudName} => ${localDiagnostics.join(" | ")}`
-      );
+      if (localDiagnostics.length > 0) {
+        diagnostics.push(
+          `${candidate.source}:${candidate.cloudName} => ${localDiagnostics.join(" | ")}`
+        );
+      }
+    }
+
+    if (bestImages.length > 0) {
+      return NextResponse.json({
+        images: bestImages,
+        warning: bestWarning,
+      });
     }
 
     return NextResponse.json({
