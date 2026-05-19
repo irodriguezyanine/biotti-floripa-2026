@@ -12,7 +12,7 @@ import {
 export const runtime = "nodejs";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-const MAX_FILES_PER_UPLOAD = 10;
+const MAX_FILES_PER_UPLOAD = 50;
 
 function toIsoDate(value?: string) {
   if (!value) return new Date().toISOString();

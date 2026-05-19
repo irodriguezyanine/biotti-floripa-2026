@@ -44,6 +44,7 @@ type SelectedPreview = {
 const OWNERSHIP_STORAGE_KEY = "biotti-gallery-ownership-v1";
 const MAX_UPLOAD_TARGET_BYTES = 3.8 * 1024 * 1024;
 const MAX_IMAGE_DIMENSION = 2200;
+const MAX_FILES_PER_BATCH = 50;
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("es-CL", {
@@ -122,9 +123,9 @@ export default function GallerySection() {
           (item) => item.name === file.name && item.size === file.size
         );
         if (!exists) merged.push(file);
-        if (merged.length >= 10) break;
+        if (merged.length >= MAX_FILES_PER_BATCH) break;
       }
-      return merged.slice(0, 10);
+      return merged.slice(0, MAX_FILES_PER_BATCH);
     });
   }
 
@@ -419,7 +420,7 @@ export default function GallerySection() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-md px-4 py-6"
+              className="fixed inset-0 z-[1000] flex items-start sm:items-center justify-center overflow-y-auto bg-black/80 backdrop-blur-md px-4 py-4 sm:py-6"
               onClick={() => setIsUploaderOpen(false)}
             >
               <motion.form
@@ -429,7 +430,7 @@ export default function GallerySection() {
                 transition={{ type: "spring", damping: 24, stiffness: 260 }}
                 onSubmit={onSubmit}
                 onClick={(event) => event.stopPropagation()}
-                className="relative w-full max-w-3xl glass-card rounded-3xl border border-white/25 p-5 sm:p-7"
+                className="relative my-3 w-full max-w-3xl max-h-[92vh] overflow-y-auto glass-card rounded-3xl border border-white/25 p-5 sm:p-7"
               >
                 <button
                   type="button"
@@ -483,7 +484,7 @@ export default function GallerySection() {
                           </span>
                           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-mono text-white/85">
                             <Files className="w-3.5 h-3.5 text-miami-blue" />
-                            {selectedCount}/10
+                            {selectedCount}/{MAX_FILES_PER_BATCH}
                           </span>
                           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-mono text-white/85">
                             <HardDrive className="w-3.5 h-3.5 text-miami-blue" />
@@ -565,7 +566,7 @@ export default function GallerySection() {
                         type="submit"
                         disabled={!canSubmit}
                         className={cn(
-                          "inline-flex h-12 w-12 items-center justify-center rounded-full transition-colors",
+                          "inline-flex h-11 min-w-[140px] items-center justify-center gap-2 rounded-xl px-4 transition-colors",
                           canSubmit
                             ? "bg-miami-blue/25 border border-miami-blue/60 text-miami-blue hover:bg-miami-blue/35"
                             : "bg-white/5 border border-white/10 text-white/40 cursor-not-allowed"
@@ -574,9 +575,15 @@ export default function GallerySection() {
                         title={uploading ? "Subiendo fotos" : "Subir fotos"}
                       >
                         {uploading ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span className="font-body text-sm">Subiendo...</span>
+                          </>
                         ) : (
-                          <Upload className="w-5 h-5" />
+                          <>
+                            <Upload className="w-4 h-4" />
+                            <span className="font-body text-sm">Subir fotos</span>
+                          </>
                         )}
                       </button>
                     </div>
