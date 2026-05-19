@@ -1012,7 +1012,7 @@ export default function ActivitiesSection() {
   }
 
   return (
-    <section id="activities" className="relative py-24 px-4 overflow-hidden">
+    <section id="activities" className="relative py-20 px-4 overflow-hidden">
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
         style={{ backgroundImage: "url(/party-brasil.png)" }}
@@ -1038,10 +1038,12 @@ export default function ActivitiesSection() {
           contraseña + {ACTIVITIES.filter((activity) => !activity.requiresPassword).length} actividad abierta + horario oficial
         </motion.p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           {ACTIVITIES.map((activity, index) => {
             const Icon = activity.icon;
             const isUnlocked = !activity.requiresPassword || Boolean(unlocked[activity.id]);
+            const isLastCard = index === ACTIVITIES.length - 1;
+            const hasOddCards = ACTIVITIES.length % 2 !== 0;
             return (
               <motion.button
                 key={activity.id}
@@ -1052,8 +1054,9 @@ export default function ActivitiesSection() {
                 transition={{ delay: index * 0.06 }}
                 onClick={() => onOpenActivity(activity.id)}
                 className={cn(
-                  "group glass-card rounded-2xl border p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/10",
-                  activity.borderClass
+                  "group glass-card rounded-2xl border p-4 sm:p-5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/10",
+                  activity.borderClass,
+                  hasOddCards && isLastCard && "sm:col-span-2"
                 )}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -1069,7 +1072,7 @@ export default function ActivitiesSection() {
                 <h3 className="mt-4 font-display text-2xl text-white group-hover:text-white">{activity.title}</h3>
                 <p className="mt-1 text-sm text-white/65 font-body">{activity.subtitle}</p>
 
-                <div className="mt-4 grid grid-cols-1 gap-2">
+                <div className="mt-3 grid grid-cols-1 gap-1.5">
                   <div className="rounded-xl border border-white/15 bg-black/20 px-3 py-2 flex items-center gap-2">
                     <CalendarDays className="h-4 w-4 text-miami-blue shrink-0" />
                     <p className="text-xs sm:text-sm text-white/85 font-body">{activity.day}</p>
@@ -1091,7 +1094,7 @@ export default function ActivitiesSection() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"
+            className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/85 backdrop-blur-sm px-4"
             onClick={closePasswordModal}
           >
             <motion.div
@@ -1099,43 +1102,92 @@ export default function ActivitiesSection() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.97 }}
               onClick={(event) => event.stopPropagation()}
-              className="w-full max-w-md rounded-2xl border border-white/25 glass-card p-6"
+              className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-fuchsia-300/35 shadow-[0_30px_120px_rgba(0,0,0,0.6)]"
             >
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="font-display text-2xl text-white">Clave de acceso</h3>
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 h-full w-full object-cover opacity-45"
+                src="/videos/access-loop.mp4"
+              />
+              <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-fuchsia-950/55 to-sky-950/70" />
+              <motion.div
+                aria-hidden
+                className="pointer-events-none absolute -left-16 -top-16 h-72 w-72 rounded-full border border-fuchsia-300/20"
+                animate={{ rotate: 360, scale: [1, 1.08, 1] }}
+                transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+              />
+              <motion.div
+                aria-hidden
+                className="pointer-events-none absolute -right-24 -bottom-24 h-96 w-96 rounded-full border border-cyan-300/20"
+                animate={{ rotate: -360, scale: [1, 1.06, 1] }}
+                transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
+              />
+
+              <div className="relative z-10 p-6 sm:p-7">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.35em] text-fuchsia-200/85 font-mono">
+                      Protocolo seguro activado
+                    </p>
+                    <h3 className="mt-2 font-display text-4xl sm:text-5xl text-white leading-none">
+                      Archivo Clasificado
+                    </h3>
+                    <p className="mt-1 font-display text-2xl sm:text-3xl text-fuchsia-300 [text-shadow:0_0_15px_rgba(222,91,255,0.5)]">
+                      DESPEDIDA BIOTTI
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closePasswordModal}
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white/85 hover:bg-black/55"
+                    aria-label="Cerrar modal de contraseña"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <motion.div
+                  className="mt-4 rounded-2xl border border-rose-300/30 bg-rose-500/10 p-4"
+                  animate={{ opacity: [0.75, 1, 0.75] }}
+                  transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <p className="text-xs font-mono uppercase tracking-[0.24em] text-rose-200/90 flex items-center gap-2">
+                    <Lock className="h-3.5 w-3.5" />
+                    Contenido secreto bloqueado
+                  </p>
+                  <p className="mt-2 font-body text-white text-base sm:text-lg">
+                    Faltan solo <span className="text-amber-200 font-semibold">2 días</span>. Ingresa la clave para desbloquear la misión.
+                  </p>
+                </motion.div>
+
+                <div className="mt-4 relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-miami-blue" />
+                  <input
+                    type="password"
+                    value={passwordInput}
+                    onChange={(event) => {
+                      setPasswordInput(event.target.value);
+                      setPasswordError("");
+                    }}
+                    className="w-full rounded-xl border border-white/25 bg-black/35 pl-10 pr-4 py-3.5 text-white placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-fuchsia-300/60"
+                    placeholder="Clave de acceso"
+                    autoFocus
+                  />
+                </div>
+                {passwordError && (
+                  <p className="mt-2 text-rose-300 text-sm font-body">{passwordError}</p>
+                )}
                 <button
                   type="button"
-                  onClick={closePasswordModal}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-black/30 text-white/80 hover:bg-black/50"
-                  aria-label="Cerrar modal de contraseña"
+                  onClick={onValidatePassword}
+                  className="mt-5 w-full rounded-xl border border-cyan-300/55 bg-gradient-to-r from-cyan-400/25 via-miami-blue/20 to-fuchsia-400/20 px-4 py-3 text-cyan-200 font-display text-xl tracking-wider hover:brightness-125 transition-all"
                 >
-                  <X className="h-4 w-4" />
+                  DESBLOQUEAR BÓVEDA
                 </button>
               </div>
-              <div className="mt-4 relative">
-                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-miami-blue" />
-                <input
-                  type="password"
-                  value={passwordInput}
-                  onChange={(event) => {
-                    setPasswordInput(event.target.value);
-                    setPasswordError("");
-                  }}
-                  className="w-full rounded-xl border border-white/20 bg-white/5 pl-10 pr-4 py-3 text-white placeholder:text-white/35 focus:outline-none focus:ring-2 focus:ring-miami-blue/60"
-                  placeholder="Ingresa contraseña"
-                  autoFocus
-                />
-              </div>
-              {passwordError && (
-                <p className="mt-2 text-rose-300 text-sm font-body">{passwordError}</p>
-              )}
-              <button
-                type="button"
-                onClick={onValidatePassword}
-                className="mt-5 w-full rounded-xl border border-miami-blue/55 bg-miami-blue/15 px-4 py-3 text-miami-blue font-body font-semibold hover:bg-miami-blue/25 transition-colors"
-              >
-                Entrar
-              </button>
             </motion.div>
           </motion.div>
         )}
