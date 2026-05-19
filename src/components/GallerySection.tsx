@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, MouseEvent, TouchEvent, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Camera,
@@ -90,7 +90,21 @@ export default function GallerySection() {
     message: string;
     onConfirm: () => void;
   } | null>(null);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const carouselDragStateRef = useRef<{
+    isDragging: boolean;
+    startX: number;
+    startScrollLeft: number;
+    hasMoved: boolean;
+  }>({
+    isDragging: false,
+    startX: 0,
+    startScrollLeft: 0,
+    hasMoved: false,
+  });
+  const viewerTouchStartXRef = useRef<number | null>(null);
+  const [isCarouselPaused, setIsCarouselPaused] = useState(false);
 
   const canSubmit = useMemo(() => {
     return !uploading && selectedFiles.length > 0 && uploaderName.trim().length > 0;
@@ -110,6 +124,16 @@ export default function GallerySection() {
       })),
     [images, ownershipMap]
   );
+  const carouselItems = useMemo(() => {
+    if (imagesWithOwnership.length > 1) {
+      return [...imagesWithOwnership, ...imagesWithOwnership];
+    }
+    return imagesWithOwnership;
+  }, [imagesWithOwnership]);
+  const currentViewerImage =
+    viewerIndex !== null && viewerIndex >= 0 && viewerIndex < imagesWithOwnership.length
+      ? imagesWithOwnership[viewerIndex]
+      : null;
 
   function onSelectFiles(files: FileList | null) {
     if (!files) return;
@@ -151,6 +175,68 @@ export default function GallerySection() {
       left: direction === "right" ? shift : -shift,
       behavior: "smooth",
     });
+  }
+
+  function onCarouselMouseDown(event: MouseEvent<HTMLDivElement>) {
+    const container = carouselRef.current;
+    if (!container) return;
+    carouselDragStateRef.current = {
+      isDragging: true,
+      startX: event.clientX,
+      startScrollLeft: container.scrollLeft,
+      hasMoved: false,
+    };
+    setIsCarouselPaused(true);
+  }
+
+  function onCarouselMouseMove(event: MouseEvent<HTMLDivElement>) {
+    const container = carouselRef.current;
+    if (!container || !carouselDragStateRef.current.isDragging) return;
+    event.preventDefault();
+    const deltaX = event.clientX - carouselDragStateRef.current.startX;
+    if (Math.abs(deltaX) > 6) {
+      carouselDragStateRef.current.hasMoved = true;
+    }
+    container.scrollLeft = carouselDragStateRef.current.startScrollLeft - deltaX;
+  }
+
+  function stopCarouselMouseDrag() {
+    if (!carouselDragStateRef.current.isDragging) return;
+    carouselDragStateRef.current.isDragging = false;
+    setIsCarouselPaused(false);
+  }
+
+  function onOpenViewer(imageId: string) {
+    const idx = imagesWithOwnership.findIndex((item) => item.id === imageId);
+    if (idx >= 0) setViewerIndex(idx);
+  }
+
+  function onCloseViewer() {
+    setViewerIndex(null);
+  }
+
+  function onNextViewerImage() {
+    if (!imagesWithOwnership.length || viewerIndex === null) return;
+    setViewerIndex((viewerIndex + 1) % imagesWithOwnership.length);
+  }
+
+  function onPreviousViewerImage() {
+    if (!imagesWithOwnership.length || viewerIndex === null) return;
+    setViewerIndex((viewerIndex - 1 + imagesWithOwnership.length) % imagesWithOwnership.length);
+  }
+
+  function onViewerTouchStart(event: TouchEvent<HTMLDivElement>) {
+    viewerTouchStartXRef.current = event.touches[0]?.clientX ?? null;
+  }
+
+  function onViewerTouchEnd(event: TouchEvent<HTMLDivElement>) {
+    if (viewerTouchStartXRef.current === null) return;
+    const endX = event.changedTouches[0]?.clientX ?? viewerTouchStartXRef.current;
+    const deltaX = endX - viewerTouchStartXRef.current;
+    viewerTouchStartXRef.current = null;
+    if (Math.abs(deltaX) < 40) return;
+    if (deltaX < 0) onNextViewerImage();
+    else onPreviousViewerImage();
   }
 
   async function loadGallery() {
@@ -195,6 +281,39 @@ export default function GallerySection() {
       previews.forEach((preview) => URL.revokeObjectURL(preview.url));
     };
   }, [selectedFiles]);
+
+  useEffect(() => {
+    const container = carouselRef.current;
+    if (!container || imagesWithOwnership.length <= 1) return;
+
+    let animationId = 0;
+    const speed = 0.35;
+
+    const animate = () => {
+      if (!isCarouselPaused) {
+        container.scrollLeft += speed;
+        const halfWidth = container.scrollWidth / 2;
+        if (container.scrollLeft >= halfWidth) {
+          container.scrollLeft -= halfWidth;
+        }
+      }
+      animationId = window.requestAnimationFrame(animate);
+    };
+
+    animationId = window.requestAnimationFrame(animate);
+    return () => window.cancelAnimationFrame(animationId);
+  }, [imagesWithOwnership.length, isCarouselPaused]);
+
+  useEffect(() => {
+    if (viewerIndex === null) return;
+    function handleKeydown(event: KeyboardEvent) {
+      if (event.key === "Escape") onCloseViewer();
+      if (event.key === "ArrowRight") onNextViewerImage();
+      if (event.key === "ArrowLeft") onPreviousViewerImage();
+    }
+    window.addEventListener("keydown", handleKeydown);
+    return () => window.removeEventListener("keydown", handleKeydown);
+  }, [viewerIndex, imagesWithOwnership.length]);
 
   async function optimizeImageForUpload(file: File) {
     if (file.size <= MAX_UPLOAD_TARGET_BYTES) return file;
@@ -646,24 +765,39 @@ export default function GallerySection() {
             </div>
             <div
               ref={carouselRef}
-              className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20"
+              onMouseDown={onCarouselMouseDown}
+              onMouseMove={onCarouselMouseMove}
+              onMouseUp={stopCarouselMouseDrag}
+              onMouseLeave={stopCarouselMouseDrag}
+              onTouchStart={() => setIsCarouselPaused(true)}
+              onTouchEnd={() => setIsCarouselPaused(false)}
+              onTouchCancel={() => setIsCarouselPaused(false)}
+              className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 cursor-grab active:cursor-grabbing [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
             >
-              {imagesWithOwnership.map((image) => (
+              {carouselItems.map((image, idx) => (
                 <motion.article
-                  key={image.id}
+                  key={`${image.id}-${idx}`}
                   initial={{ opacity: 0, y: 14 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   className="glass-card rounded-2xl overflow-hidden border border-white/15 shrink-0 snap-start w-[82vw] sm:w-[52vw] lg:w-[32vw] xl:w-[28vw]"
                 >
-                  <div className="aspect-[4/3] bg-black/30">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (carouselDragStateRef.current.hasMoved) return;
+                      onOpenViewer(image.id);
+                    }}
+                    className="aspect-[4/3] w-full bg-black/30 text-left"
+                    aria-label={`Ver foto en pantalla completa de ${image.uploadedBy}`}
+                  >
                     <img
                       src={image.url}
                       alt={`Foto subida por ${image.uploadedBy}`}
                       className="w-full h-full object-cover"
                       loading="lazy"
                     />
-                  </div>
+                  </button>
                   <div className="p-4 space-y-2">
                     <div className="flex items-center justify-between gap-3">
                       <p className="inline-flex items-center gap-2 text-white font-body font-semibold min-w-0">
@@ -705,6 +839,68 @@ export default function GallerySection() {
         )}
 
       </div>
+
+      <AnimatePresence>
+        {currentViewerImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[1150] bg-black/90 backdrop-blur-sm px-4 py-6 flex items-center justify-center"
+            onClick={onCloseViewer}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 16, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              onClick={(event) => event.stopPropagation()}
+              onTouchStart={onViewerTouchStart}
+              onTouchEnd={onViewerTouchEnd}
+              className="relative w-full max-w-5xl"
+            >
+              <button
+                type="button"
+                onClick={onCloseViewer}
+                className="absolute right-2 top-2 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/40 text-white/90 hover:bg-black/65 transition-colors"
+                aria-label="Cerrar visor de galería"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <img
+                src={currentViewerImage.url}
+                alt={`Foto subida por ${currentViewerImage.uploadedBy}`}
+                className="w-full max-h-[76vh] object-contain rounded-2xl border border-white/15 bg-black/40"
+              />
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={onPreviousViewerImage}
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-4 py-2 text-white/90 font-body hover:bg-white/15 transition-colors"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Anterior
+                </button>
+                <div className="text-center">
+                  <p className="text-white font-body font-semibold">
+                    {currentViewerImage.uploadedBy}
+                  </p>
+                  <p className="text-xs text-white/60 font-mono">
+                    {viewerIndex !== null ? `${viewerIndex + 1} / ${imagesWithOwnership.length}` : ""}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onNextViewerImage}
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-4 py-2 text-white/90 font-body hover:bg-white/15 transition-colors"
+                >
+                  Siguiente
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {confirmModal && (

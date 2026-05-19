@@ -44,7 +44,22 @@ export async function GET() {
     const cloudinary = getCloudinary();
     const folder = getGalleryFolder();
     const candidates = getCloudinaryConfigCandidates();
-    let bestImages: Array<{
+    const mergedById = new Map<
+      string,
+      {
+        id: string;
+        url: string;
+        width: number;
+        height: number;
+        uploadedBy: string;
+        message: string;
+        uploadedAt: string;
+      }
+    >();
+    let hadSuccessfulCandidate = false;
+    let successfulCandidateCount = 0;
+    let mergedWarning: string | undefined;
+    const mergedImagesFromCandidates: Array<{
       id: string;
       url: string;
       width: number;
@@ -52,8 +67,7 @@ export async function GET() {
       uploadedBy: string;
       message: string;
       uploadedAt: string;
-    }> = [];
-    let bestWarning: string | undefined;
+    }>[] = [];
 
     for (const candidate of candidates) {
       applyCloudinaryConfigCandidate(candidate);
@@ -104,12 +118,13 @@ export async function GET() {
             new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
         );
 
-      if (images.length > bestImages.length) {
-        bestImages = images;
-        bestWarning =
-          localDiagnostics.length > 0
-            ? `${localDiagnostics.join(" | ")} | config: ${candidate.source}:${candidate.cloudName}`
-            : undefined;
+      if (localDiagnostics.length === 0) {
+        hadSuccessfulCandidate = true;
+        successfulCandidateCount += 1;
+      }
+
+      if (images.length > 0) {
+        mergedImagesFromCandidates.push(images);
       }
 
       if (localDiagnostics.length > 0) {
@@ -119,10 +134,37 @@ export async function GET() {
       }
     }
 
-    if (bestImages.length > 0) {
+    for (const imageList of mergedImagesFromCandidates) {
+      for (const image of imageList) {
+        const current = mergedById.get(image.id);
+        if (!current) {
+          mergedById.set(image.id, image);
+          continue;
+        }
+        const currentTs = new Date(current.uploadedAt).getTime();
+        const incomingTs = new Date(image.uploadedAt).getTime();
+        if (incomingTs > currentTs) {
+          mergedById.set(image.id, image);
+        }
+      }
+    }
+
+    const mergedImages = Array.from(mergedById.values()).sort(
+      (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+    );
+
+    if (successfulCandidateCount > 1) {
+      mergedWarning =
+        "Se detectaron múltiples configuraciones de Cloudinary activas. Se unificaron resultados para evitar pérdida visual al refrescar.";
+    }
+    if (!mergedWarning && diagnostics.length > 0 && hadSuccessfulCandidate) {
+      mergedWarning = diagnostics.join(" || ");
+    }
+
+    if (mergedImages.length > 0) {
       return NextResponse.json({
-        images: bestImages,
-        warning: bestWarning,
+        images: mergedImages,
+        warning: mergedWarning,
       });
     }
 
