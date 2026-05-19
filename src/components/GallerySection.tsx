@@ -93,6 +93,7 @@ export default function GallerySection() {
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const carouselTouchStartXRef = useRef<number | null>(null);
+  const carouselLastTsRef = useRef<number | null>(null);
   const carouselDragStateRef = useRef({
     isDragging: false,
     startX: 0,
@@ -215,6 +216,17 @@ export default function GallerySection() {
     setIsCarouselPaused(false);
   }
 
+  function onCarouselScroll() {
+    const container = carouselRef.current;
+    if (!container || imagesWithOwnership.length <= 1) return;
+    const half = container.scrollWidth / 2;
+    if (container.scrollLeft >= half) {
+      container.scrollLeft -= half;
+    } else if (container.scrollLeft <= 0) {
+      container.scrollLeft += half;
+    }
+  }
+
   function onCloseViewer() {
     setViewerIndex(null);
   }
@@ -291,11 +303,14 @@ export default function GallerySection() {
     if (!container || imagesWithOwnership.length <= 1) return;
 
     let animationId = 0;
-    const speedPx = 0.5;
+    const speedPxPerSecond = 42;
 
-    const tick = () => {
+    const tick = (timestamp: number) => {
+      const last = carouselLastTsRef.current ?? timestamp;
+      const deltaSeconds = Math.min((timestamp - last) / 1000, 0.05);
+      carouselLastTsRef.current = timestamp;
       if (!isCarouselPaused) {
-        container.scrollLeft += speedPx;
+        container.scrollLeft += speedPxPerSecond * deltaSeconds;
         const half = container.scrollWidth / 2;
         if (container.scrollLeft >= half) {
           container.scrollLeft -= half;
@@ -304,8 +319,12 @@ export default function GallerySection() {
       animationId = window.requestAnimationFrame(tick);
     };
 
+    carouselLastTsRef.current = null;
     animationId = window.requestAnimationFrame(tick);
-    return () => window.cancelAnimationFrame(animationId);
+    return () => {
+      window.cancelAnimationFrame(animationId);
+      carouselLastTsRef.current = null;
+    };
   }, [imagesWithOwnership.length, isCarouselPaused]);
 
   useEffect(() => {
@@ -751,7 +770,8 @@ export default function GallerySection() {
             </div>
             <div
               ref={carouselRef}
-              className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 cursor-grab active:cursor-grabbing [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden touch-pan-x"
+              onScroll={onCarouselScroll}
+              className="flex gap-4 overflow-x-auto pb-2 cursor-grab active:cursor-grabbing [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden touch-pan-x"
               onMouseDown={onCarouselMouseDown}
               onMouseMove={onCarouselMouseMove}
               onMouseUp={onCarouselMouseUpOrLeave}
