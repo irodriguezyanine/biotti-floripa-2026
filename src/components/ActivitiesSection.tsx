@@ -93,9 +93,21 @@ type MandiolaVote = "true" | "false" | null;
 type MandiolaPhase = "vote" | "result" | "summary";
 type OracionStage = "cover" | "lines" | "final";
 type BonusActivityStage = "intro" | "video" | "final";
+type NovioVoteStep = "handoff" | "vote";
+type NovioStage = "intro" | "voting" | "confesiones" | "summary";
 type OracionLine = {
   speaker: "novio" | "todos";
   text: string;
+};
+type NovioQuestion = {
+  question: string;
+  options: string[];
+  correctOptionIdx: number;
+  imageUrl?: string;
+};
+type NovioConfesion = {
+  player: string;
+  prompt: string;
 };
 
 const ACTIVITIES: Activity[] = [
@@ -139,11 +151,11 @@ const ACTIVITIES: Activity[] = [
   {
     id: "actividad-novio",
     title: "Actividad del novio",
-    subtitle: "Bloque especial",
+    subtitle: "Despedida: versión sin censura",
     day: "Sábado 23 Mayo",
     time: "21:00 - 22:00",
     location: "Cuartel base · Bloque creado por el novio",
-    password: "Shots2026",
+    password: "Cata123",
     requiresPassword: true,
     icon: PartyPopper,
     accentClass: "text-sunset-orange",
@@ -238,6 +250,146 @@ const MANDIOLA_PLAYERS = [
   "Pedro",
   "Seba",
   "Felipe",
+];
+
+const NOVIO_PLAYERS = [
+  "Pedro de Diego",
+  "Seba Valenzuela",
+  "Jose Tomas Molina",
+  "Manuel Bolados",
+  "Ignacio Rodriguez",
+  "Felipe Bravo",
+  "Javier Mandiola",
+  "Javier Vargas",
+];
+
+const NOVIO_INTRO_TEXT =
+  "Bienvenidos, caballeros. Estamos aquí para sacar a la luz todas las anécdotas, traiciones, papelones y malas decisiones del grupo. Esta noche no existen filtros, dignidad ni derecho a guardar silencio. Aquí no gana el más inocente porque claramente ninguno lo es. Así que preparen los shots, afilen la memoria y que comiencen las confesiones.";
+
+const NOVIO_QUESTIONS: NovioQuestion[] = [
+  {
+    question: "1. ¿Por qué le dicen Ben10 al novio?",
+    options: [
+      "Porque le metió 10 goles a Cebollita",
+      "Porque se comió 10 minas en el CASI",
+      "Porque lleva 10 pololas",
+      "Porque se comió 10 o más minas en el CASI",
+    ],
+    correctOptionIdx: 1,
+    imageUrl: "/images/novio/pregunta-01-ben10.png",
+  },
+  {
+    question: "2. ¿Quién fue el wingman de la noche de Ben10?",
+    options: ["Ignacio Rodriguez", "Matias Reyes", "Jose Tomas Molina", "Javier Vargas"],
+    correctOptionIdx: 2,
+    imageUrl: "/images/novio/pregunta-02-wingman.png",
+  },
+  {
+    question: "3. ¿Quién fue el ingenioso que le puso BEN10 al novio?",
+    options: ["Ignacio Rodriguez", "Manuel Bolados", "Daniel Valenzuela", "Felipe Bravo"],
+    correctOptionIdx: 0,
+  },
+  {
+    question: "4. Adivina el personaje: ¿quién le bajaba los pantalones en el tren a las muchachitas?",
+    options: ["Sebastian Biotti", "Matias Sapelli", "Jose Tomas Molina", "Pedro de Diego"],
+    correctOptionIdx: 2,
+  },
+  {
+    question: "5. ¿Quién de aquí no chupa ano?",
+    options: ["Pedro de Diego", "Javier Vargas", "Seba Valenzuela", "Javier Mandiola"],
+    correctOptionIdx: 3,
+  },
+  {
+    question: "6. ¿Quién de los de aquí tiene más pelos en el ano?",
+    options: ["Pedro de Diego", "Jose Tomas Molina", "Javier Mandiola", "Felipe Bravo"],
+    correctOptionIdx: 0,
+  },
+  {
+    question: "7. ¿Quién de aquí regaló un perro a la polola y la pateó dos semanas después?",
+    options: ["Manuel Bolados", "Seba Valenzuela", "Javier Vargas", "Ignacio Rodriguez"],
+    correctOptionIdx: 1,
+  },
+  {
+    question: "8. ¿Quién da los peores consejos amorosos?",
+    options: ["Daniel Valenzuela", "Ignacio Rodriguez", "Felipe Bravo", "Sebastian Biotti"],
+    correctOptionIdx: 2,
+  },
+  {
+    question: "9. ¿Quién andaba jalando fafafa de las tetas de putas de Bellavista?",
+    options: ["Seba Valenzuela", "Ignacio Rodriguez", "Manuel Bolados", "Javier Mandiola"],
+    correctOptionIdx: 2,
+  },
+  {
+    question: "10. ¿Quién de aquí terminó durmiendo bajo una banca en Cantagallo?",
+    options: ["Jose Tomas Molina", "Ignacio Rodriguez", "Pedro de Diego", "Javier Vargas"],
+    correctOptionIdx: 1,
+  },
+  {
+    question: "11. ¿Quién salió funado por agarrarse con un grupo de minas?",
+    options: ["Daniel Valenzuela", "Felipe Bravo", "Manuel Bolados", "Javier Vargas"],
+    correctOptionIdx: 3,
+  },
+  {
+    question: '12. Para los pajeros, ¿cómo termina esta canción: "Eu Brazzino el..."?',
+    options: [
+      "La era de este juego",
+      "El juego de cadera",
+      "La cadera de este juego",
+      "El juego de esta era",
+    ],
+    correctOptionIdx: 3,
+  },
+  {
+    question: "13. ¿Quién creía que el semen era azul?",
+    options: ["Pedro de Diego", "Javier Vargas", "Manuel Bolados", "Jose Tomas Molina"],
+    correctOptionIdx: 1,
+  },
+  {
+    question: "14. ¿Quién de este grupo tiene tula de perro (modo rush)?",
+    options: ["Seba Valenzuela", "Ignacio Rodriguez", "Matias Sapelli", "Felipe Bravo"],
+    correctOptionIdx: 2,
+  },
+];
+
+const NOVIO_CONFESIONES: NovioConfesion[] = [
+  {
+    player: "Pedro de Diego",
+    prompt:
+      "¿Qué pasó con la Cata Barra en el campo? ¿Es cierto que mientras te la chupaba, el guatón te pegó en la pichula?",
+  },
+  {
+    player: "Seba Valenzuela",
+    prompt:
+      "Cuenta la firme: ¿cómo conociste a tu polola actual y si fue patas negras de Lupita?",
+  },
+  {
+    player: "Jose Tomas Molina",
+    prompt: "Momo, cuenta la firme: ¿qué pasó en la pieza del hotel en Mendoza?",
+  },
+  {
+    player: "Manuel Bolados",
+    prompt: "Hermano, la firme: para la despedida de Sapene, ¿cómo te portaste?",
+  },
+  {
+    player: "Ignacio Rodriguez",
+    prompt:
+      "Con lujo de detalles: ¿qué ocurrió cuando la Dani te pilló con la mina en el depa?",
+  },
+  {
+    player: "Felipe Bravo",
+    prompt:
+      "¿Hubo remember con la Jesu? Si hubo, cuenta cómo fue; si no hubo, cuenta por qué terminaron.",
+  },
+  {
+    player: "Javier Mandiola",
+    prompt:
+      "Mandolino, la firme: ¿qué pasó con la muchachita de enfermería? ¿Le chupaste el sapolio o no?",
+  },
+  {
+    player: "Javier Vargas",
+    prompt:
+      "¿Qué pasó en el gym de Talca? Cuenta sobre las fotos que mandabas a las bataclanas y cómo se enteró Cata.",
+  },
 ];
 
 const NOVIA_QUESTIONS: NoviaQuestion[] = [
@@ -513,6 +665,14 @@ export default function ActivitiesSection() {
     (string | null)[]
   >(() => CIERTO_BIOTTI_ITEMS.map(() => null));
   const [noviaStage, setNoviaStage] = useState<NoviaGameStage>("cover");
+  const [novioStage, setNovioStage] = useState<NovioStage>("intro");
+  const [novioQuestionIdx, setNovioQuestionIdx] = useState(0);
+  const [novioVoterIdx, setNovioVoterIdx] = useState(0);
+  const [novioVoteStep, setNovioVoteStep] = useState<NovioVoteStep>("handoff");
+  const [novioVotes, setNovioVotes] = useState<(number | null)[][]>(() =>
+    NOVIO_QUESTIONS.map(() => NOVIO_PLAYERS.map(() => null))
+  );
+  const [novioConfesionIdx, setNovioConfesionIdx] = useState(0);
 
   const INTRO_VIDEO_URL = "/videos/vale/Introduccion.mp4";
   const BONUS_ACTIVITY_VIDEO_URL = "/videos/vale/video-bonus-celedon.mp4";
@@ -601,6 +761,35 @@ export default function ActivitiesSection() {
     ? MANDIOLA_PLAYERS.filter((player) => player !== mandiolaGiftPickerGiverName)
     : [];
   const allMandiolaVotesDone = currentMandiolaVotes.every((vote) => vote !== null);
+  const currentNovioQuestion = NOVIO_QUESTIONS[novioQuestionIdx];
+  const currentNovioVotes = novioVotes[novioQuestionIdx] ?? [];
+  const currentNovioVoterName = NOVIO_PLAYERS[novioVoterIdx];
+  const currentNovioSelection = currentNovioVotes[novioVoterIdx];
+  const isLastNovioVoter = novioVoterIdx === NOVIO_PLAYERS.length - 1;
+  const isLastNovioQuestion = novioQuestionIdx === NOVIO_QUESTIONS.length - 1;
+  const currentNovioConfesion = NOVIO_CONFESIONES[novioConfesionIdx];
+  const isLastNovioConfesion = novioConfesionIdx === NOVIO_CONFESIONES.length - 1;
+  const novioPlayerStats = useMemo(() => {
+    const stats = NOVIO_PLAYERS.map((playerName, playerIdx) => {
+      let correct = 0;
+      let wrong = 0;
+      NOVIO_QUESTIONS.forEach((question, questionIdx) => {
+        const vote = novioVotes[questionIdx]?.[playerIdx];
+        if (vote === null || vote === undefined) return;
+        if (vote === question.correctOptionIdx) correct += 1;
+        else wrong += 1;
+      });
+      return { playerName, correct, wrong, total: correct - wrong };
+    });
+    return stats.sort((a, b) => {
+      if (b.correct !== a.correct) return b.correct - a.correct;
+      if (a.wrong !== b.wrong) return a.wrong - b.wrong;
+      return b.total - a.total;
+    });
+  }, [novioVotes]);
+  const maxNovioCorrect = novioPlayerStats[0]?.correct ?? 0;
+  const novioWinners = novioPlayerStats.filter((player) => player.correct === maxNovioCorrect);
+  const novioLosers = novioPlayerStats.filter((player) => player.correct < maxNovioCorrect);
   const isFirstMandiolaQuestion = mandiolaQuestionIdx === 0;
   const isLastMandiolaQuestion = mandiolaQuestionIdx === CIERTO_BIOTTI_ITEMS.length - 1;
   const currentMandiolaWinners = MANDIOLA_PLAYERS.filter((_, playerIdx) => {
@@ -717,6 +906,15 @@ export default function ActivitiesSection() {
     setMandiolaGiftPicker(null);
   }
 
+  function resetNovioActivityState() {
+    setNovioStage("intro");
+    setNovioQuestionIdx(0);
+    setNovioVoterIdx(0);
+    setNovioVoteStep("handoff");
+    setNovioVotes(NOVIO_QUESTIONS.map(() => NOVIO_PLAYERS.map(() => null)));
+    setNovioConfesionIdx(0);
+  }
+
   function resetActivityState(activityId: string) {
     if (activityId === "preguntas-novia") {
       resetPreguntasNoviaState();
@@ -736,6 +934,10 @@ export default function ActivitiesSection() {
     }
     if (activityId === "juego-preferencias") {
       resetPreferenceGameState();
+      return;
+    }
+    if (activityId === "actividad-novio") {
+      resetNovioActivityState();
     }
   }
 
@@ -934,6 +1136,100 @@ export default function ActivitiesSection() {
     }
     setBonusIdx((prev) => prev + 1);
     setBonusStep("question-video");
+  }
+
+  function markNovioVote(optionIdx: number) {
+    setNovioVotes((previous) => {
+      const next = previous.map((byQuestion) => [...byQuestion]);
+      next[novioQuestionIdx][novioVoterIdx] = optionIdx;
+      return next;
+    });
+  }
+
+  function onNextNovioStage() {
+    if (novioStage === "intro") {
+      setNovioStage("voting");
+      setNovioQuestionIdx(0);
+      setNovioVoterIdx(0);
+      setNovioVoteStep("handoff");
+      return;
+    }
+
+    if (novioStage === "voting") {
+      if (novioVoteStep === "handoff") {
+        setNovioVoteStep("vote");
+        return;
+      }
+
+      if (currentNovioSelection === null || currentNovioSelection === undefined) return;
+
+      if (isLastNovioVoter && isLastNovioQuestion) {
+        setNovioStage("confesiones");
+        setNovioConfesionIdx(0);
+        return;
+      }
+
+      if (isLastNovioVoter) {
+        setNovioQuestionIdx((prev) => prev + 1);
+        setNovioVoterIdx(0);
+        setNovioVoteStep("handoff");
+        return;
+      }
+
+      setNovioVoterIdx((prev) => prev + 1);
+      setNovioVoteStep("handoff");
+      return;
+    }
+
+    if (novioStage === "confesiones") {
+      if (isLastNovioConfesion) {
+        setNovioStage("summary");
+        return;
+      }
+      setNovioConfesionIdx((prev) => prev + 1);
+    }
+  }
+
+  function onPreviousNovioStage() {
+    if (novioStage === "intro") return;
+
+    if (novioStage === "summary") {
+      setNovioStage("confesiones");
+      setNovioConfesionIdx(NOVIO_CONFESIONES.length - 1);
+      return;
+    }
+
+    if (novioStage === "confesiones") {
+      if (novioConfesionIdx > 0) {
+        setNovioConfesionIdx((prev) => prev - 1);
+        return;
+      }
+      setNovioStage("voting");
+      setNovioQuestionIdx(NOVIO_QUESTIONS.length - 1);
+      setNovioVoterIdx(NOVIO_PLAYERS.length - 1);
+      setNovioVoteStep("vote");
+      return;
+    }
+
+    if (novioVoteStep === "vote") {
+      setNovioVoteStep("handoff");
+      return;
+    }
+
+    if (novioVoterIdx > 0) {
+      setNovioVoterIdx((prev) => prev - 1);
+      setNovioVoteStep("vote");
+      return;
+    }
+
+    if (novioQuestionIdx > 0) {
+      setNovioQuestionIdx((prev) => prev - 1);
+      setNovioVoterIdx(NOVIO_PLAYERS.length - 1);
+      setNovioVoteStep("vote");
+      return;
+    }
+
+    setNovioStage("intro");
   }
 
   function markMandiolaVote(playerIdx: number, vote: Exclude<MandiolaVote, null>) {
@@ -1963,6 +2259,295 @@ export default function ActivitiesSection() {
                           className="inline-flex items-center gap-2 rounded-xl border border-fuchsia-300/45 bg-fuchsia-500/10 px-4 py-2 text-fuchsia-100 font-body hover:bg-fuchsia-500/20"
                         >
                           Reiniciar bonus
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : activeActivity.id === "actividad-novio" ? (
+                <div className="space-y-4">
+                  {novioStage === "intro" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-rose-950/65 via-fuchsia-950/55 to-sky-950/75 p-5 sm:p-7 shadow-[0_20px_55px_rgba(0,0,0,0.4)]">
+                      <div className="rounded-2xl border border-rose-300/35 bg-rose-500/10 p-5 sm:p-6">
+                        <p className="text-xs font-mono uppercase tracking-[0.2em] text-rose-200/90">
+                          Actividad del novio
+                        </p>
+                        <h4 className="mt-3 font-display text-4xl sm:text-5xl text-white leading-tight">
+                          Despedida: versión sin censura
+                        </h4>
+                        <p className="mt-4 text-white/90 font-body text-sm sm:text-base leading-relaxed">
+                          {NOVIO_INTRO_TEXT}
+                        </p>
+                        <div className="mt-4 rounded-xl border border-amber-300/35 bg-amber-500/10 px-4 py-3">
+                          <p className="text-xs font-mono uppercase tracking-[0.16em] text-amber-200/90">
+                            Dinámica por etapas
+                          </p>
+                          <p className="mt-1 text-sm text-white/85 font-body">
+                            Pregunta &gt; pasa celular &gt; vota jugador &gt; siguiente jugador
+                            (modo impostor).
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={closeActivityModal}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={onNextNovioStage}
+                          className="inline-flex items-center gap-2 rounded-xl border border-rose-300/55 bg-gradient-to-r from-rose-500/20 via-fuchsia-500/15 to-amber-500/15 px-4 py-2 text-rose-100 font-body font-semibold hover:brightness-110"
+                        >
+                          Empezar encuesta
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {novioStage === "voting" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-slate-900/75 to-rose-950/55 p-4 sm:p-6 shadow-[0_20px_55px_rgba(0,0,0,0.35)]">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-xs font-mono uppercase tracking-[0.18em] text-white/70">
+                          Pregunta {novioQuestionIdx + 1} / {NOVIO_QUESTIONS.length}
+                        </span>
+                        <span className="text-[11px] font-mono uppercase tracking-[0.18em] text-fuchsia-200 rounded-full border border-fuchsia-300/35 bg-fuchsia-500/10 px-2 py-1">
+                          Jugador {novioVoterIdx + 1} / {NOVIO_PLAYERS.length}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 rounded-2xl border border-white/20 bg-black/25 p-4">
+                        <h4 className="font-display text-2xl sm:text-3xl text-white leading-snug">
+                          {currentNovioQuestion.question}
+                        </h4>
+                      </div>
+
+                      {currentNovioQuestion.imageUrl && (
+                        <div className="mt-3 rounded-2xl border border-white/15 bg-black/25 p-2">
+                          <img
+                            src={currentNovioQuestion.imageUrl}
+                            alt={`Imagen de apoyo de la ${currentNovioQuestion.question}`}
+                            className="w-full max-h-[320px] object-contain rounded-xl bg-black/45"
+                          />
+                        </div>
+                      )}
+
+                      {novioVoteStep === "handoff" ? (
+                        <motion.div
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mt-4 rounded-2xl border border-amber-300/35 bg-gradient-to-r from-amber-500/15 to-orange-500/10 p-6 sm:p-7 text-center"
+                        >
+                          <p className="text-xs font-mono uppercase tracking-[0.2em] text-amber-200/90">
+                            Modo impostor
+                          </p>
+                          <h5 className="mt-3 font-display text-4xl sm:text-5xl text-amber-100">
+                            Pasa el celular a {currentNovioVoterName}
+                          </h5>
+                        </motion.div>
+                      ) : (
+                        <div className="mt-4">
+                          <div className="rounded-2xl border border-fuchsia-300/35 bg-fuchsia-500/10 px-4 py-3">
+                            <p className="text-sm sm:text-base text-white/90 font-body">
+                              {currentNovioVoterName}, vota una alternativa.
+                            </p>
+                          </div>
+                          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {currentNovioQuestion.options.map((option, optionIdx) => (
+                              <button
+                                key={`novio-option-${novioQuestionIdx}-${optionIdx}`}
+                                type="button"
+                                onClick={() => markNovioVote(optionIdx)}
+                                className={cn(
+                                  "rounded-xl border px-4 py-3 text-left font-body text-sm sm:text-base transition-colors",
+                                  currentNovioSelection === optionIdx
+                                    ? "border-rose-300/65 bg-rose-500/20 text-rose-100"
+                                    : "border-white/20 bg-white/5 text-white/85 hover:bg-white/10"
+                                )}
+                              >
+                                <span className="font-semibold text-white/95 mr-1">
+                                  Alternativa {optionIdx + 1} -
+                                </span>
+                                {option}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={onPreviousNovioStage}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={onNextNovioStage}
+                          disabled={
+                            novioVoteStep === "vote" &&
+                            (currentNovioSelection === null || currentNovioSelection === undefined)
+                          }
+                          className={cn(
+                            "inline-flex items-center gap-2 rounded-xl border px-4 py-2 font-body transition-colors",
+                            novioVoteStep === "vote" &&
+                              (currentNovioSelection === null ||
+                                currentNovioSelection === undefined)
+                              ? "border-white/20 bg-white/5 text-white/45 cursor-not-allowed"
+                              : "border-miami-blue/55 bg-miami-blue/15 text-miami-blue hover:bg-miami-blue/25"
+                          )}
+                        >
+                          {novioVoteStep === "handoff"
+                            ? "Jugador listo"
+                            : isLastNovioVoter
+                              ? isLastNovioQuestion
+                                ? "Ir a confesiones"
+                                : "Siguiente pregunta"
+                              : "Siguiente jugador"}
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {novioStage === "confesiones" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-zinc-900/75 to-fuchsia-950/60 p-5 sm:p-7 shadow-[0_20px_55px_rgba(0,0,0,0.35)]">
+                      <p className="text-xs font-mono uppercase tracking-[0.18em] text-white/65">
+                        Segunda parte · confesionario {novioConfesionIdx + 1} /{" "}
+                        {NOVIO_CONFESIONES.length}
+                      </p>
+                      <div className="mt-3 rounded-2xl border border-fuchsia-300/35 bg-fuchsia-500/10 p-4 sm:p-5">
+                        <h4 className="font-display text-3xl sm:text-4xl text-white">
+                          {currentNovioConfesion.player}
+                        </h4>
+                        <p className="mt-3 text-white/90 font-body text-sm sm:text-base leading-relaxed">
+                          {currentNovioConfesion.prompt}
+                        </p>
+                      </div>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={onPreviousNovioStage}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={onNextNovioStage}
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-miami-blue/15 px-4 py-2 text-miami-blue font-body hover:bg-miami-blue/25"
+                        >
+                          {isLastNovioConfesion ? "Ver resultados" : "Siguiente confesión"}
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {novioStage === "summary" && (
+                    <div className="rounded-3xl border border-emerald-300/35 bg-gradient-to-br from-emerald-900/30 via-sky-950/75 to-slate-950/75 p-5 sm:p-7">
+                      <h4 className="font-display text-4xl sm:text-5xl text-white">
+                        Resultados finales
+                      </h4>
+                      <p className="mt-2 text-white/80 font-body text-sm sm:text-base">
+                        Ranking de precisión del modo impostor y cierre de ganadores/perdedores.
+                      </p>
+
+                      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="rounded-2xl border border-emerald-300/35 bg-emerald-500/10 p-4">
+                          <p className="text-xs font-mono uppercase tracking-[0.16em] text-emerald-200/90">
+                            Ganadores
+                          </p>
+                          <div className="mt-2 space-y-2">
+                            {novioWinners.map((winner) => (
+                              <div
+                                key={`novio-winner-${winner.playerName}`}
+                                className="rounded-xl border border-emerald-200/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-100 font-body"
+                              >
+                                <span className="font-semibold">{winner.playerName}</span> ·{" "}
+                                {winner.correct} aciertos
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="rounded-2xl border border-rose-300/35 bg-rose-500/10 p-4">
+                          <p className="text-xs font-mono uppercase tracking-[0.16em] text-rose-200/90">
+                            Perdedores
+                          </p>
+                          <div className="mt-2 space-y-2">
+                            {novioLosers.length > 0 ? (
+                              novioLosers.map((loser) => (
+                                <div
+                                  key={`novio-loser-${loser.playerName}`}
+                                  className="rounded-xl border border-rose-200/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100 font-body"
+                                >
+                                  <span className="font-semibold">{loser.playerName}</span> ·{" "}
+                                  {loser.correct} aciertos
+                                </div>
+                              ))
+                            ) : (
+                              <div className="rounded-xl border border-rose-200/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100 font-body">
+                                Nadie quedó abajo. Todos empataron arriba.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 overflow-x-auto rounded-2xl border border-white/20 bg-black/25">
+                        <table className="min-w-[640px] w-full text-left">
+                          <thead>
+                            <tr className="border-b border-white/20 bg-white/10">
+                              <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
+                                Puesto
+                              </th>
+                              <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
+                                Jugador
+                              </th>
+                              <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
+                                Aciertos
+                              </th>
+                              <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
+                                Errores
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {novioPlayerStats.map((player, idx) => (
+                              <tr key={`novio-summary-${player.playerName}`} className="border-b border-white/10">
+                                <td className="px-3 py-2 text-sm text-white/85 font-body">#{idx + 1}</td>
+                                <td className="px-3 py-2 text-sm text-white font-semibold font-body">
+                                  {player.playerName}
+                                </td>
+                                <td className="px-3 py-2 text-sm text-emerald-200 font-body">
+                                  {player.correct}
+                                </td>
+                                <td className="px-3 py-2 text-sm text-rose-200 font-body">{player.wrong}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={onPreviousNovioStage}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={resetNovioActivityState}
+                          className="inline-flex items-center gap-2 rounded-xl border border-fuchsia-300/45 bg-fuchsia-500/10 px-4 py-2 text-fuchsia-100 font-body hover:bg-fuchsia-500/20"
+                        >
+                          Reiniciar juego
                         </button>
                       </div>
                     </div>
