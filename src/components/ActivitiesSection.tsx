@@ -103,7 +103,7 @@ type NovioQuestion = {
   question: string;
   options: string[];
   correctOptionIdx: number;
-  imageUrl?: string;
+  imageUrl?: string | string[];
 };
 type NovioConfesion = {
   player: string;
@@ -288,46 +288,55 @@ const NOVIO_QUESTIONS: NovioQuestion[] = [
     question: "3. ¿Quién fue el ingenioso que le puso BEN10 al novio?",
     options: ["Ignacio Rodriguez", "Manuel Bolados", "Daniel Valenzuela", "Felipe Bravo"],
     correctOptionIdx: 0,
+    imageUrl: ["/images/novio/pregunta-03-ben10-origen.png", "/images/novio/pregunta-03-ben10-origen-2.png"],
   },
   {
     question: "4. Adivina el personaje: ¿quién le bajaba los pantalones en el tren a las muchachitas?",
     options: ["Sebastian Biotti", "Matias Sapelli", "Jose Tomas Molina", "Pedro de Diego"],
     correctOptionIdx: 2,
+    imageUrl: ["/images/novio/pregunta-04-tren.png", "/images/novio/pregunta-04-tren-2.png"],
   },
   {
     question: "5. ¿Quién de aquí no chupa ano?",
     options: ["Pedro de Diego", "Javier Vargas", "Seba Valenzuela", "Javier Mandiola"],
     correctOptionIdx: 3,
+    imageUrl: "/images/novio/pregunta-05-ano.png",
   },
   {
     question: "6. ¿Quién de los de aquí tiene más pelos en el ano?",
     options: ["Pedro de Diego", "Jose Tomas Molina", "Javier Mandiola", "Felipe Bravo"],
     correctOptionIdx: 0,
+    imageUrl: ["/images/novio/pregunta-06-pelos.png", "/images/novio/pregunta-06-pelos-2.png"],
   },
   {
     question: "7. ¿Quién de aquí regaló un perro a la polola y la pateó dos semanas después?",
     options: ["Manuel Bolados", "Seba Valenzuela", "Javier Vargas", "Ignacio Rodriguez"],
     correctOptionIdx: 1,
+    imageUrl: "/images/novio/pregunta-07-perro.png",
   },
   {
     question: "8. ¿Quién da los peores consejos amorosos?",
     options: ["Daniel Valenzuela", "Ignacio Rodriguez", "Felipe Bravo", "Sebastian Biotti"],
     correctOptionIdx: 2,
+    imageUrl: "/images/novio/pregunta-08-consejos.png",
   },
   {
     question: "9. ¿Quién andaba jalando fafafa de las tetas de putas de Bellavista?",
     options: ["Seba Valenzuela", "Ignacio Rodriguez", "Manuel Bolados", "Javier Mandiola"],
     correctOptionIdx: 2,
+    imageUrl: "/images/novio/pregunta-09-bellavista-2.png",
   },
   {
     question: "10. ¿Quién de aquí terminó durmiendo bajo una banca en Cantagallo?",
     options: ["Jose Tomas Molina", "Ignacio Rodriguez", "Pedro de Diego", "Javier Vargas"],
     correctOptionIdx: 1,
+    imageUrl: "/images/novio/pregunta-10-cantagallo.png",
   },
   {
     question: "11. ¿Quién salió funado por agarrarse con un grupo de minas?",
     options: ["Daniel Valenzuela", "Felipe Bravo", "Manuel Bolados", "Javier Vargas"],
     correctOptionIdx: 3,
+    imageUrl: ["/images/novio/pregunta-11-funado.png", "/images/novio/pregunta-11-funado-2.png"],
   },
   {
     question: '12. Para los pajeros, ¿cómo termina esta canción: "Eu Brazzino el..."?',
@@ -338,16 +347,19 @@ const NOVIO_QUESTIONS: NovioQuestion[] = [
       "El juego de esta era",
     ],
     correctOptionIdx: 3,
+    imageUrl: "/images/novio/pregunta-12-brazzino.png",
   },
   {
     question: "13. ¿Quién creía que el semen era azul?",
     options: ["Pedro de Diego", "Javier Vargas", "Manuel Bolados", "Jose Tomas Molina"],
     correctOptionIdx: 1,
+    imageUrl: "/images/novio/pregunta-13-semen.png",
   },
   {
     question: "14. ¿Quién de este grupo tiene tula de perro (modo rush)?",
     options: ["Seba Valenzuela", "Ignacio Rodriguez", "Matias Sapelli", "Felipe Bravo"],
     correctOptionIdx: 2,
+    imageUrl: ["/images/novio/pregunta-14-tula.png", "/images/novio/pregunta-14-tula-2.png"],
   },
 ];
 
@@ -2326,12 +2338,23 @@ export default function ActivitiesSection() {
                       </div>
 
                       {currentNovioQuestion.imageUrl && (
-                        <div className="mt-3 rounded-2xl border border-white/15 bg-black/25 p-2">
-                          <img
-                            src={currentNovioQuestion.imageUrl}
-                            alt={`Imagen de apoyo de la ${currentNovioQuestion.question}`}
-                            className="w-full max-h-[320px] object-contain rounded-xl bg-black/45"
-                          />
+                        <div className={cn(
+                          "mt-3 rounded-2xl border border-white/15 bg-black/25 p-2",
+                          Array.isArray(currentNovioQuestion.imageUrl) && currentNovioQuestion.imageUrl.length > 1
+                            ? "grid grid-cols-2 gap-2"
+                            : ""
+                        )}>
+                          {(Array.isArray(currentNovioQuestion.imageUrl)
+                            ? currentNovioQuestion.imageUrl
+                            : [currentNovioQuestion.imageUrl]
+                          ).map((url, imgIdx) => (
+                            <img
+                              key={`novio-img-${novioQuestionIdx}-${imgIdx}`}
+                              src={url}
+                              alt={`Imagen ${imgIdx + 1} de la ${currentNovioQuestion.question}`}
+                              className="w-full max-h-[320px] object-contain rounded-xl bg-black/45"
+                            />
+                          ))}
                         </div>
                       )}
 
