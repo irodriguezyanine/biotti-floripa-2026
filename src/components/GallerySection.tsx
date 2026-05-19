@@ -42,6 +42,8 @@ type SelectedPreview = {
 };
 
 const OWNERSHIP_STORAGE_KEY = "biotti-gallery-ownership-v1";
+const MAX_UPLOAD_TARGET_BYTES = 3.8 * 1024 * 1024;
+const MAX_IMAGE_DIMENSION = 2200;
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("es-CL", {
@@ -189,6 +191,56 @@ export default function GallerySection() {
     };
   }, [selectedFiles]);
 
+  async function optimizeImageForUpload(file: File) {
+    if (file.size <= MAX_UPLOAD_TARGET_BYTES) return file;
+
+    let objectUrl = "";
+    try {
+      objectUrl = URL.createObjectURL(file);
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error(`No se pudo leer la imagen: ${file.name}`));
+        image.src = objectUrl;
+      });
+
+      const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(img.width, img.height));
+      const width = Math.max(1, Math.round(img.width * scale));
+      const height = Math.max(1, Math.round(img.height * scale));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const context = canvas.getContext("2d");
+      if (!context) {
+        return file;
+      }
+      context.drawImage(img, 0, 0, width, height);
+
+      const fileBaseName = file.name.replace(/\.[^/.]+$/, "");
+
+      for (const quality of [0.86, 0.78, 0.7, 0.62, 0.55]) {
+        const compressedBlob = await new Promise<Blob | null>((resolve) =>
+          canvas.toBlob((blob) => resolve(blob), "image/jpeg", quality)
+        );
+        if (!compressedBlob) continue;
+        if (compressedBlob.size <= MAX_UPLOAD_TARGET_BYTES || quality === 0.55) {
+          return new File([compressedBlob], `${fileBaseName}.jpg`, {
+            type: "image/jpeg",
+            lastModified: Date.now(),
+          });
+        }
+      }
+
+      return file;
+    } catch {
+      return file;
+    } finally {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    }
+  }
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit) return;
@@ -198,30 +250,46 @@ export default function GallerySection() {
     setSuccessMessage("");
 
     try {
-      const formData = new FormData();
-      selectedFiles.forEach((file) => formData.append("files", file));
-      formData.append("uploaderName", uploaderName.trim());
-      formData.append("message", message.trim());
+      const uploadedImages: GalleryImage[] = [];
+      const ownershipTokens: OwnershipToken[] = [];
+      const failedFiles: string[] = [];
 
-      const response = await fetch("/api/gallery/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await response.json();
+      for (const originalFile of selectedFiles) {
+        const file = await optimizeImageForUpload(originalFile);
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("uploaderName", uploaderName.trim());
+        formData.append("message", message.trim());
 
-      if (!response.ok) {
-        throw new Error(
-          [data?.error, data?.details].filter(Boolean).join(" · ") ||
-            "No se pudo subir la imagen."
-        );
+        const response = await fetch("/api/gallery/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          const details =
+            [data?.error, data?.details].filter(Boolean).join(" · ") ||
+            "No se pudo subir la imagen.";
+          failedFiles.push(`${originalFile.name}: ${details}`);
+          continue;
+        }
+
+        const currentUploadedImages = Array.isArray(data?.images)
+          ? (data.images as GalleryImage[])
+          : [];
+        const currentOwnershipTokens = Array.isArray(data?.ownershipTokens)
+          ? (data.ownershipTokens as OwnershipToken[])
+          : [];
+
+        uploadedImages.push(...currentUploadedImages);
+        ownershipTokens.push(...currentOwnershipTokens);
       }
 
-      const uploadedImages = Array.isArray(data?.images)
-        ? (data.images as GalleryImage[])
-        : [];
-      const ownershipTokens = Array.isArray(data?.ownershipTokens)
-        ? (data.ownershipTokens as OwnershipToken[])
-        : [];
+      if (uploadedImages.length === 0 && failedFiles.length > 0) {
+        throw new Error(failedFiles.join(" | "));
+      }
+
       if (ownershipTokens.length > 0) {
         setOwnershipMap((previous) => {
           const next = { ...previous };
@@ -235,11 +303,18 @@ export default function GallerySection() {
 
       if (uploadedImages.length > 0) {
         setImages((previous) => [...uploadedImages, ...previous]);
-        setSuccessMessage(
-          uploadedImages.length === 1
-            ? "Foto subida con éxito."
-            : `${uploadedImages.length} fotos subidas con éxito.`
-        );
+        if (failedFiles.length > 0) {
+          setSuccessMessage(
+            `${uploadedImages.length} foto(s) subida(s). ${failedFiles.length} fallaron.`
+          );
+          setError(failedFiles.join(" | "));
+        } else {
+          setSuccessMessage(
+            uploadedImages.length === 1
+              ? "Foto subida con éxito."
+              : `${uploadedImages.length} fotos subidas con éxito.`
+          );
+        }
       }
 
       clearSelectedFiles();

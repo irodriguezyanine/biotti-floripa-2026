@@ -2515,10 +2515,24 @@ export default function ActivitiesSection() {
                               <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
                                 Errores
                               </th>
+                              <th className="px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/75">
+                                Castigo
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
-                            {novioPlayerStats.map((player, idx) => (
+                            {novioPlayerStats.map((player, idx) => {
+                              const totalPlayers = novioPlayerStats.length;
+                              const reverseIdx = totalPlayers - 1 - idx;
+                              let castigo = "";
+                              if (idx < 3) {
+                                const shotsToGive = 3 - idx;
+                                castigo = `Reparte ${shotsToGive} shot${shotsToGive > 1 ? "s" : ""}`;
+                              } else if (reverseIdx < 3) {
+                                const shotsToTake = 3 - reverseIdx;
+                                castigo = `Toma ${shotsToTake} shot${shotsToTake > 1 ? "s" : ""}`;
+                              }
+                              return (
                               <tr key={`novio-summary-${player.playerName}`} className="border-b border-white/10">
                                 <td className="px-3 py-2 text-sm text-white/85 font-body">#{idx + 1}</td>
                                 <td className="px-3 py-2 text-sm text-white font-semibold font-body">
@@ -2528,8 +2542,15 @@ export default function ActivitiesSection() {
                                   {player.correct}
                                 </td>
                                 <td className="px-3 py-2 text-sm text-rose-200 font-body">{player.wrong}</td>
+                                <td className={cn(
+                                  "px-3 py-2 text-sm font-body font-semibold",
+                                  idx < 3 ? "text-cyan-200" : reverseIdx < 3 ? "text-amber-200" : "text-white/50"
+                                )}>
+                                  {castigo || "—"}
+                                </td>
                               </tr>
-                            ))}
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
