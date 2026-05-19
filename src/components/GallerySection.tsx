@@ -92,12 +92,8 @@ export default function GallerySection() {
   } | null>(null);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
-  const carouselDragStateRef = useRef<{
-    isDragging: boolean;
-    startX: number;
-    startScrollLeft: number;
-    hasMoved: boolean;
-  }>({
+  const carouselTouchStartXRef = useRef<number | null>(null);
+  const carouselDragStateRef = useRef({
     isDragging: false,
     startX: 0,
     startScrollLeft: 0,
@@ -167,14 +163,9 @@ export default function GallerySection() {
     if (fileInput) fileInput.value = "";
   }
 
-  function scrollCarousel(direction: "left" | "right") {
-    const container = carouselRef.current;
-    if (!container) return;
-    const shift = Math.max(container.clientWidth * 0.8, 320);
-    container.scrollBy({
-      left: direction === "right" ? shift : -shift,
-      behavior: "smooth",
-    });
+  function onOpenViewer(imageId: string) {
+    const idx = imagesWithOwnership.findIndex((item) => item.id === imageId);
+    if (idx >= 0) setViewerIndex(idx);
   }
 
   function onCarouselMouseDown(event: MouseEvent<HTMLDivElement>) {
@@ -200,15 +191,28 @@ export default function GallerySection() {
     container.scrollLeft = carouselDragStateRef.current.startScrollLeft - deltaX;
   }
 
-  function stopCarouselMouseDrag() {
+  function onCarouselMouseUpOrLeave() {
     if (!carouselDragStateRef.current.isDragging) return;
     carouselDragStateRef.current.isDragging = false;
     setIsCarouselPaused(false);
   }
 
-  function onOpenViewer(imageId: string) {
-    const idx = imagesWithOwnership.findIndex((item) => item.id === imageId);
-    if (idx >= 0) setViewerIndex(idx);
+  function onCarouselTouchStart(event: TouchEvent<HTMLDivElement>) {
+    carouselTouchStartXRef.current = event.touches[0]?.clientX ?? null;
+    setIsCarouselPaused(true);
+  }
+
+  function onCarouselTouchMove(event: TouchEvent<HTMLDivElement>) {
+    if (carouselTouchStartXRef.current === null) return;
+    const deltaX = (event.touches[0]?.clientX ?? carouselTouchStartXRef.current) - carouselTouchStartXRef.current;
+    if (Math.abs(deltaX) > 8) {
+      carouselDragStateRef.current.hasMoved = true;
+    }
+  }
+
+  function onCarouselTouchEndOrCancel() {
+    carouselTouchStartXRef.current = null;
+    setIsCarouselPaused(false);
   }
 
   function onCloseViewer() {
@@ -287,20 +291,20 @@ export default function GallerySection() {
     if (!container || imagesWithOwnership.length <= 1) return;
 
     let animationId = 0;
-    const speed = 0.35;
+    const speedPx = 0.5;
 
-    const animate = () => {
+    const tick = () => {
       if (!isCarouselPaused) {
-        container.scrollLeft += speed;
-        const halfWidth = container.scrollWidth / 2;
-        if (container.scrollLeft >= halfWidth) {
-          container.scrollLeft -= halfWidth;
+        container.scrollLeft += speedPx;
+        const half = container.scrollWidth / 2;
+        if (container.scrollLeft >= half) {
+          container.scrollLeft -= half;
         }
       }
-      animationId = window.requestAnimationFrame(animate);
+      animationId = window.requestAnimationFrame(tick);
     };
 
-    animationId = window.requestAnimationFrame(animate);
+    animationId = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(animationId);
   }, [imagesWithOwnership.length, isCarouselPaused]);
 
@@ -742,37 +746,20 @@ export default function GallerySection() {
           <>
             <div className="flex items-center justify-between mb-4">
               <p className="text-white/70 font-body text-sm">
-                Últimas subidas · desliza horizontalmente
+                Últimas subidas · carrusel automático
               </p>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => scrollCarousel("left")}
-                  className="w-9 h-9 rounded-full border border-white/20 bg-white/5 text-white/80 hover:bg-white/10 flex items-center justify-center transition-colors"
-                  aria-label="Desplazar carrusel a la izquierda"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => scrollCarousel("right")}
-                  className="w-9 h-9 rounded-full border border-white/20 bg-white/5 text-white/80 hover:bg-white/10 flex items-center justify-center transition-colors"
-                  aria-label="Desplazar carrusel a la derecha"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
             </div>
             <div
               ref={carouselRef}
+              className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 cursor-grab active:cursor-grabbing [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden touch-pan-x"
               onMouseDown={onCarouselMouseDown}
               onMouseMove={onCarouselMouseMove}
-              onMouseUp={stopCarouselMouseDrag}
-              onMouseLeave={stopCarouselMouseDrag}
-              onTouchStart={() => setIsCarouselPaused(true)}
-              onTouchEnd={() => setIsCarouselPaused(false)}
-              onTouchCancel={() => setIsCarouselPaused(false)}
-              className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 cursor-grab active:cursor-grabbing [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              onMouseUp={onCarouselMouseUpOrLeave}
+              onMouseLeave={onCarouselMouseUpOrLeave}
+              onTouchStart={onCarouselTouchStart}
+              onTouchMove={onCarouselTouchMove}
+              onTouchEnd={onCarouselTouchEndOrCancel}
+              onTouchCancel={onCarouselTouchEndOrCancel}
             >
               {carouselItems.map((image, idx) => (
                 <motion.article
@@ -785,7 +772,10 @@ export default function GallerySection() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (carouselDragStateRef.current.hasMoved) return;
+                      if (carouselDragStateRef.current.hasMoved) {
+                        carouselDragStateRef.current.hasMoved = false;
+                        return;
+                      }
                       onOpenViewer(image.id);
                     }}
                     className="aspect-[4/3] w-full bg-black/30 text-left"
