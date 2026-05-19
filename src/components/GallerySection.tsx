@@ -85,6 +85,10 @@ export default function GallerySection() {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploaderOpen, setIsUploaderOpen] = useState(false);
   const [ownershipMap, setOwnershipMap] = useState<Record<string, string>>({});
+  const [confirmModal, setConfirmModal] = useState<{
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const canSubmit = useMemo(() => {
@@ -327,12 +331,21 @@ export default function GallerySection() {
     }
   }
 
-  async function onDeleteImage(imageId: string) {
+  function onDeleteImage(imageId: string) {
     const deleteToken = ownershipMap[imageId];
     if (!deleteToken || deletingId) return;
-    const confirmed = window.confirm("¿Seguro que quieres eliminar esta foto?");
-    if (!confirmed) return;
+    setConfirmModal({
+      message: "¿Seguro que quieres eliminar esta foto?",
+      onConfirm: () => {
+        setConfirmModal(null);
+        void executeDeleteImage(imageId);
+      },
+    });
+  }
 
+  async function executeDeleteImage(imageId: string) {
+    const deleteToken = ownershipMap[imageId];
+    if (!deleteToken) return;
     setDeletingId(imageId);
     setError("");
     setSuccessMessage("");
@@ -685,6 +698,46 @@ export default function GallerySection() {
         )}
 
       </div>
+
+      <AnimatePresence>
+        {confirmModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"
+            onClick={() => setConfirmModal(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 16, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.97 }}
+              onClick={(event) => event.stopPropagation()}
+              className="w-full max-w-md rounded-2xl border border-white/25 bg-sky-950/95 backdrop-blur-xl p-6"
+            >
+              <p className="text-white font-body text-base sm:text-lg leading-relaxed">
+                {confirmModal.message}
+              </p>
+              <div className="mt-5 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setConfirmModal(null)}
+                  className="rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmModal.onConfirm}
+                  className="rounded-xl border border-rose-300/55 bg-rose-500/15 px-4 py-2 text-rose-100 font-body font-semibold hover:bg-rose-500/25 transition-colors"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

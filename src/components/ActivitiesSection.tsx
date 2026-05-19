@@ -712,6 +712,10 @@ export default function ActivitiesSection() {
   const [manuelTeams, setManuelTeams] = useState<ManuelTeam[]>([]);
   const [manuelMatches, setManuelMatches] = useState<ManuelMatch[]>([]);
   const [manuelSorteoRevealed, setManuelSorteoRevealed] = useState(0);
+  const [confirmModal, setConfirmModal] = useState<{
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   const INTRO_VIDEO_URL = "/videos/vale/Introduccion.mp4";
   const BONUS_ACTIVITY_VIDEO_URL = "/videos/vale/video-bonus-celedon.mp4";
@@ -1110,11 +1114,13 @@ export default function ActivitiesSection() {
 
   function onRestartCurrentActivity() {
     if (!activeActivityId) return;
-    const confirmed = window.confirm(
-      "¿Seguro que quieres reiniciar esta actividad desde el principio?"
-    );
-    if (!confirmed) return;
-    resetActivityState(activeActivityId);
+    setConfirmModal({
+      message: "¿Seguro que quieres reiniciar esta actividad desde el principio?",
+      onConfirm: () => {
+        resetActivityState(activeActivityId);
+        setConfirmModal(null);
+      },
+    });
   }
 
   function onOpenActivity(activityId: string) {
@@ -4445,6 +4451,46 @@ export default function ActivitiesSection() {
                   </motion.div>
                 )}
               </AnimatePresence>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {confirmModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"
+            onClick={() => setConfirmModal(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 16, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.97 }}
+              onClick={(event) => event.stopPropagation()}
+              className="w-full max-w-md rounded-2xl border border-white/25 glass-card p-6"
+            >
+              <p className="text-white font-body text-base sm:text-lg leading-relaxed">
+                {confirmModal.message}
+              </p>
+              <div className="mt-5 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setConfirmModal(null)}
+                  className="rounded-xl border border-white/25 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmModal.onConfirm}
+                  className="rounded-xl border border-rose-300/55 bg-rose-500/15 px-4 py-2 text-rose-100 font-body font-semibold hover:bg-rose-500/25 transition-colors"
+                >
+                  Confirmar
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
