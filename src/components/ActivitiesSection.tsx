@@ -1049,6 +1049,12 @@ export default function ActivitiesSection() {
     });
   }
 
+  function getManuelTeamPlayers(teamName: string | null): string {
+    if (!teamName) return "";
+    const team = manuelTeams.find((t) => t.name === teamName);
+    return team ? `${team.players[0]} + ${team.players[1]}` : teamName;
+  }
+
   const manuelChampion = manuelMatches.find((m) => m.id === "gf")?.winner ?? null;
   const manuelRunnerUp = manuelChampion
     ? (manuelMatches.find((m) => m.id === "gf")?.teamA === manuelChampion
@@ -3301,7 +3307,7 @@ export default function ActivitiesSection() {
                                                   : "border-white/25 bg-white/5 text-white/85 hover:bg-white/10"
                                             )}
                                           >
-                                            {match.teamA}
+                                            {getManuelTeamPlayers(match.teamA)}
                                             {match.winner === match.teamA && " ✓"}
                                           </button>
                                           <span className="text-xs text-white/50 font-mono text-center">vs</span>
@@ -3318,7 +3324,7 @@ export default function ActivitiesSection() {
                                                   : "border-white/25 bg-white/5 text-white/85 hover:bg-white/10"
                                             )}
                                           >
-                                            {match.teamB}
+                                            {getManuelTeamPlayers(match.teamB)}
                                             {match.winner === match.teamB && " ✓"}
                                           </button>
                                         </div>
@@ -3364,12 +3370,12 @@ export default function ActivitiesSection() {
                         animate={{ scale: [1, 1.04, 1] }}
                         transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
                       >
-                        {manuelChampion}
+                        {getManuelTeamPlayers(manuelChampion)}
                       </motion.h4>
                       <p className="mt-2 text-white/90 font-body text-lg">Campeones del torneo</p>
                       {manuelRunnerUp && (
                         <p className="mt-1 text-white/70 font-body text-sm">
-                          Subcampeón: <span className="text-fuchsia-200 font-semibold">{manuelRunnerUp}</span>
+                          Subcampeón: <span className="text-fuchsia-200 font-semibold">{getManuelTeamPlayers(manuelRunnerUp)}</span>
                         </p>
                       )}
 
@@ -3394,8 +3400,8 @@ export default function ActivitiesSection() {
                               return (
                                 <tr key={`result-${match.id}`} className="border-b border-white/10">
                                   <td className="px-3 py-2 text-sm text-white/75 font-body">{phaseLabels[match.phase]}</td>
-                                  <td className="px-3 py-2 text-sm text-white/85 font-body">{match.teamA} vs {match.teamB}</td>
-                                  <td className="px-3 py-2 text-sm text-emerald-200 font-body font-semibold">{match.winner}</td>
+                                  <td className="px-3 py-2 text-sm text-white/85 font-body">{getManuelTeamPlayers(match.teamA)} vs {getManuelTeamPlayers(match.teamB)}</td>
+                                  <td className="px-3 py-2 text-sm text-emerald-200 font-body font-semibold">{getManuelTeamPlayers(match.winner)}</td>
                                 </tr>
                               );
                             })}
