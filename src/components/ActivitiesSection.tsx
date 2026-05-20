@@ -2367,7 +2367,7 @@ export default function ActivitiesSection() {
                           />
                         ))}
                         <div className="star-wars-crawl-scene relative z-10 h-full overflow-hidden">
-                          <div className="star-wars-crawl-plane">
+                          <div className="star-wars-crawl-content">
                             <p className="star-wars-crawl-text">Desde otra galaxia Jedi</p>
                           </div>
                         </div>
