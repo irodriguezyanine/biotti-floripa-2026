@@ -94,6 +94,9 @@ type MandiolaPhase = "vote" | "result" | "summary";
 type OracionStage = "cover" | "lines" | "final";
 type BonusActivityStage =
   | "personajes"
+  | "jedi"
+  | "video-pancho"
+  | "neoliberal"
   | "video-matias"
   | "veneco"
   | "video-sapelli"
@@ -725,6 +728,7 @@ export default function ActivitiesSection() {
   } | null>(null);
 
   const INTRO_VIDEO_URL = "/videos/vale/Introduccion.mp4";
+  const BONUS_PANCHO_VIDEO_URL = "/videos/vale/video-bonus-pancho.mp4";
   const BONUS_MATIAS_VIDEO_URL = "/videos/vale/video-bonus-matias.mp4";
   const BONUS_SAPELLI_VIDEO_URL = "/videos/vale/video-bonus-sapelli.mp4";
   const BONUS_ACTIVITY_VIDEO_URL = "/videos/vale/video-bonus-celedon.mp4";
@@ -2295,7 +2299,7 @@ export default function ActivitiesSection() {
                   <div className="rounded-2xl border border-fuchsia-300/35 bg-fuchsia-500/10 p-4 sm:p-5">
                     <h3 className="font-display text-3xl sm:text-4xl text-white">BONUS ESPECIAL</h3>
                     <p className="mt-2 text-white/80 font-body text-sm sm:text-base">
-                      Secuencia final de 7 etapas con saludos especiales y cierre de brindis.
+                      Secuencia final de 10 etapas con saludos especiales y cierre de brindis.
                     </p>
                   </div>
 
@@ -2328,6 +2332,133 @@ export default function ActivitiesSection() {
                         </button>
                         <button
                           type="button"
+                          onClick={() => setBonusActivityStage("jedi")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
+                        >
+                          Siguiente
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {bonusActivityStage === "jedi" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-slate-950 via-indigo-950/80 to-black p-5 sm:p-7">
+                      <p className="mb-3 text-center text-xs font-mono uppercase tracking-[0.2em] text-amber-200/85">
+                        Etapa 2
+                      </p>
+                      <div className="relative overflow-hidden rounded-2xl border border-amber-300/30 bg-black h-[300px] sm:h-[380px]">
+                        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#1b1b3a_0%,_#000_72%)]" />
+                        {[...Array(24)].map((_, idx) => (
+                          <motion.span
+                            key={`star-${idx}`}
+                            aria-hidden
+                            className="absolute h-0.5 w-0.5 rounded-full bg-white/80"
+                            style={{
+                              left: `${(idx * 17) % 100}%`,
+                              top: `${(idx * 29) % 100}%`,
+                            }}
+                            animate={{ opacity: [0.2, 1, 0.2] }}
+                            transition={{ duration: 1.6 + (idx % 5) * 0.3, repeat: Infinity, delay: idx * 0.08 }}
+                          />
+                        ))}
+                        <div className="relative z-10 h-full [perspective:420px] overflow-hidden">
+                          <motion.div
+                            className="absolute inset-x-0 bottom-0 mx-auto max-w-xl px-6 text-center [transform:rotateX(24deg)] origin-bottom"
+                            initial={{ y: "115%", opacity: 0 }}
+                            animate={{ y: "-35%", opacity: [0, 1, 1, 0.35] }}
+                            transition={{ duration: 9, ease: "linear", repeat: Infinity }}
+                          >
+                            <p
+                              className="font-display text-3xl sm:text-5xl uppercase leading-tight tracking-[0.18em] text-[#FFE81F] [text-shadow:0_0_18px_rgba(255,232,31,0.55)]"
+                              style={{ textShadow: "0 0 12px rgba(255,232,31,0.45), 0 2px 0 rgba(0,0,0,0.8)" }}
+                            >
+                              Desde otra galaxia Jedi
+                            </p>
+                          </motion.div>
+                        </div>
+                      </div>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setBonusActivityStage("personajes")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBonusActivityStage("video-pancho")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
+                        >
+                          Siguiente
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {bonusActivityStage === "video-pancho" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-violet-950/65 to-slate-950/75 p-4 sm:p-6">
+                      <p className="mb-3 text-center text-xs font-mono uppercase tracking-[0.2em] text-fuchsia-200/85">
+                        Etapa 3
+                      </p>
+                      <div className="rounded-2xl border border-fuchsia-300/35 bg-black/40 p-3">
+                        <video
+                          controls
+                          src={BONUS_PANCHO_VIDEO_URL}
+                          className="w-full rounded-xl max-h-[460px] bg-black"
+                        />
+                      </div>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setBonusActivityStage("jedi")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBonusActivityStage("neoliberal")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
+                        >
+                          Siguiente
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {bonusActivityStage === "neoliberal" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-fuchsia-950/60 to-sky-950/70 p-5 sm:p-7">
+                      <motion.div
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35 }}
+                        className="rounded-2xl border border-fuchsia-300/35 bg-fuchsia-500/10 p-6 sm:p-8 text-center"
+                      >
+                        <p className="text-xs font-mono uppercase tracking-[0.2em] text-fuchsia-200/85">
+                          Etapa 4
+                        </p>
+                        <motion.h4
+                          className="mt-3 font-display text-3xl sm:text-5xl text-fuchsia-100 leading-tight"
+                          animate={{ opacity: [0.7, 1, 0.7], scale: [1, 1.02, 1] }}
+                          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          Desde la capital del neoliberalismo ... el compañere:
+                        </motion.h4>
+                      </motion.div>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setBonusActivityStage("video-pancho")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => setBonusActivityStage("video-matias")}
                           className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
                         >
@@ -2341,7 +2472,7 @@ export default function ActivitiesSection() {
                   {bonusActivityStage === "video-matias" && (
                     <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-violet-950/65 to-slate-950/75 p-4 sm:p-6">
                       <p className="mb-3 text-center text-xs font-mono uppercase tracking-[0.2em] text-fuchsia-200/85">
-                        Etapa 2
+                        Etapa 5
                       </p>
                       <div className="rounded-2xl border border-fuchsia-300/35 bg-black/40 p-3">
                         <video
@@ -2353,7 +2484,7 @@ export default function ActivitiesSection() {
                       <div className="mt-4 flex items-center justify-between gap-3">
                         <button
                           type="button"
-                          onClick={() => setBonusActivityStage("personajes")}
+                          onClick={() => setBonusActivityStage("neoliberal")}
                           className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
                         >
                           Anterior
@@ -2379,7 +2510,7 @@ export default function ActivitiesSection() {
                         className="rounded-2xl border border-fuchsia-300/35 bg-fuchsia-500/10 p-6 sm:p-8 text-center"
                       >
                         <p className="text-xs font-mono uppercase tracking-[0.2em] text-fuchsia-200/85">
-                          Etapa 3
+                          Etapa 6
                         </p>
                         <motion.h4
                           className="mt-3 font-display text-3xl sm:text-5xl text-fuchsia-100 leading-tight"
@@ -2412,7 +2543,7 @@ export default function ActivitiesSection() {
                   {bonusActivityStage === "video-sapelli" && (
                     <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-violet-950/65 to-slate-950/75 p-4 sm:p-6">
                       <p className="mb-3 text-center text-xs font-mono uppercase tracking-[0.2em] text-fuchsia-200/85">
-                        Etapa 4
+                        Etapa 7
                       </p>
                       <div className="rounded-2xl border border-fuchsia-300/35 bg-black/40 p-3">
                         <video
@@ -2450,7 +2581,7 @@ export default function ActivitiesSection() {
                         className="rounded-2xl border border-fuchsia-300/35 bg-fuchsia-500/10 p-6 sm:p-8 text-center"
                       >
                         <p className="text-xs font-mono uppercase tracking-[0.2em] text-fuchsia-200/85">
-                          Etapa 5
+                          Etapa 8
                         </p>
                         <motion.h4
                           className="mt-3 font-display text-4xl sm:text-6xl text-fuchsia-100 leading-tight"
@@ -2483,7 +2614,7 @@ export default function ActivitiesSection() {
                   {bonusActivityStage === "video" && (
                     <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-violet-950/65 to-slate-950/75 p-4 sm:p-6">
                       <p className="mb-3 text-center text-xs font-mono uppercase tracking-[0.2em] text-fuchsia-200/85">
-                        Etapa 6
+                        Etapa 9
                       </p>
                       <div className="rounded-2xl border border-fuchsia-300/35 bg-black/40 p-3">
                         <video
@@ -2533,7 +2664,7 @@ export default function ActivitiesSection() {
                         transition={{ duration: 0.45 }}
                       >
                         <p className="text-xs font-mono uppercase tracking-[0.2em] text-amber-200/90">
-                          Etapa 7
+                          Etapa 10
                         </p>
                         <motion.h4
                           className="mt-3 font-display text-5xl sm:text-7xl text-amber-100 [text-shadow:0_0_22px_rgba(255,206,90,0.45)]"
