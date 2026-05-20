@@ -100,6 +100,8 @@ type BonusActivityStage =
   | "video-matias"
   | "veneco"
   | "video-sapelli"
+  | "recuerdos"
+  | "video-valeteresianas"
   | "intro"
   | "video"
   | "final";
@@ -731,6 +733,7 @@ export default function ActivitiesSection() {
   const BONUS_PANCHO_VIDEO_URL = "/videos/vale/video-bonus-pancho.mp4";
   const BONUS_MATIAS_VIDEO_URL = "/videos/vale/video-bonus-matias.mp4";
   const BONUS_SAPELLI_VIDEO_URL = "/videos/vale/video-bonus-sapelli.mp4";
+  const BONUS_VALETRESIANAS_VIDEO_URL = "/videos/vale/video-bonus-valeteresianas.mp4";
   const BONUS_ACTIVITY_VIDEO_URL = "/videos/vale/video-bonus-celedon.mp4";
 
   const activeActivity = useMemo(
@@ -2299,7 +2302,7 @@ export default function ActivitiesSection() {
                   <div className="rounded-2xl border border-fuchsia-300/35 bg-fuchsia-500/10 p-4 sm:p-5">
                     <h3 className="font-display text-3xl sm:text-4xl text-white">BONUS ESPECIAL</h3>
                     <p className="mt-2 text-white/80 font-body text-sm sm:text-base">
-                      Secuencia final de 10 etapas con saludos especiales y cierre de brindis.
+                      Secuencia final de 12 etapas con saludos especiales y cierre de brindis.
                     </p>
                   </div>
 
@@ -2562,6 +2565,77 @@ export default function ActivitiesSection() {
                         </button>
                         <button
                           type="button"
+                          onClick={() => setBonusActivityStage("recuerdos")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
+                        >
+                          Siguiente
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {bonusActivityStage === "recuerdos" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-fuchsia-950/60 to-sky-950/70 p-5 sm:p-7">
+                      <motion.div
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35 }}
+                        className="rounded-2xl border border-fuchsia-300/35 bg-fuchsia-500/10 p-6 sm:p-8 text-center"
+                      >
+                        <p className="text-xs font-mono uppercase tracking-[0.2em] text-fuchsia-200/85">
+                          Etapa 8
+                        </p>
+                        <motion.h4
+                          className="mt-3 font-display text-3xl sm:text-5xl text-fuchsia-100 leading-tight"
+                          animate={{ opacity: [0.7, 1, 0.7], scale: [1, 1.02, 1] }}
+                          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          Algunos recuerdos que reviven...
+                        </motion.h4>
+                      </motion.div>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setBonusActivityStage("video-sapelli")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBonusActivityStage("video-valeteresianas")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
+                        >
+                          Siguiente
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {bonusActivityStage === "video-valeteresianas" && (
+                    <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-violet-950/65 to-slate-950/75 p-4 sm:p-6">
+                      <p className="mb-3 text-center text-xs font-mono uppercase tracking-[0.2em] text-fuchsia-200/85">
+                        Etapa 9
+                      </p>
+                      <div className="rounded-2xl border border-fuchsia-300/35 bg-black/40 p-3">
+                        <video
+                          controls
+                          src={BONUS_VALETRESIANAS_VIDEO_URL}
+                          className="w-full rounded-xl max-h-[460px] bg-black"
+                        />
+                      </div>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setBonusActivityStage("recuerdos")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => setBonusActivityStage("intro")}
                           className="inline-flex items-center gap-2 rounded-xl border border-miami-blue/55 bg-gradient-to-r from-miami-blue/30 to-cyan-400/20 px-4 py-2 text-miami-blue font-body font-semibold hover:brightness-110"
                         >
@@ -2581,7 +2655,7 @@ export default function ActivitiesSection() {
                         className="rounded-2xl border border-fuchsia-300/35 bg-fuchsia-500/10 p-6 sm:p-8 text-center"
                       >
                         <p className="text-xs font-mono uppercase tracking-[0.2em] text-fuchsia-200/85">
-                          Etapa 8
+                          Etapa 10
                         </p>
                         <motion.h4
                           className="mt-3 font-display text-4xl sm:text-6xl text-fuchsia-100 leading-tight"
@@ -2594,7 +2668,7 @@ export default function ActivitiesSection() {
                       <div className="mt-4 flex items-center justify-between gap-3">
                         <button
                           type="button"
-                          onClick={() => setBonusActivityStage("video-sapelli")}
+                          onClick={() => setBonusActivityStage("video-valeteresianas")}
                           className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-4 py-2 text-white/85 font-body hover:bg-white/15"
                         >
                           Anterior
@@ -2614,7 +2688,7 @@ export default function ActivitiesSection() {
                   {bonusActivityStage === "video" && (
                     <div className="rounded-3xl border border-white/20 bg-gradient-to-br from-violet-950/65 to-slate-950/75 p-4 sm:p-6">
                       <p className="mb-3 text-center text-xs font-mono uppercase tracking-[0.2em] text-fuchsia-200/85">
-                        Etapa 9
+                        Etapa 11
                       </p>
                       <div className="rounded-2xl border border-fuchsia-300/35 bg-black/40 p-3">
                         <video
@@ -2664,7 +2738,7 @@ export default function ActivitiesSection() {
                         transition={{ duration: 0.45 }}
                       >
                         <p className="text-xs font-mono uppercase tracking-[0.2em] text-amber-200/90">
-                          Etapa 10
+                          Etapa 12
                         </p>
                         <motion.h4
                           className="mt-3 font-display text-5xl sm:text-7xl text-amber-100 [text-shadow:0_0_22px_rgba(255,206,90,0.45)]"
