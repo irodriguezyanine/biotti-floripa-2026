@@ -2352,6 +2352,7 @@ export default function ActivitiesSection() {
                       </p>
                       <div className="relative overflow-hidden rounded-2xl border border-amber-300/30 bg-black h-[300px] sm:h-[380px]">
                         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#1b1b3a_0%,_#000_72%)]" />
+                        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/80 to-transparent" />
                         {[...Array(24)].map((_, idx) => (
                           <motion.span
                             key={`star-${idx}`}
@@ -2365,20 +2366,10 @@ export default function ActivitiesSection() {
                             transition={{ duration: 1.6 + (idx % 5) * 0.3, repeat: Infinity, delay: idx * 0.08 }}
                           />
                         ))}
-                        <div className="relative z-10 h-full [perspective:420px] overflow-hidden">
-                          <motion.div
-                            className="absolute inset-x-0 bottom-0 mx-auto max-w-xl px-6 text-center [transform:rotateX(24deg)] origin-bottom"
-                            initial={{ y: "115%", opacity: 0 }}
-                            animate={{ y: "-35%", opacity: [0, 1, 1, 0.35] }}
-                            transition={{ duration: 9, ease: "linear", repeat: Infinity }}
-                          >
-                            <p
-                              className="font-display text-3xl sm:text-5xl uppercase leading-tight tracking-[0.18em] text-[#FFE81F] [text-shadow:0_0_18px_rgba(255,232,31,0.55)]"
-                              style={{ textShadow: "0 0 12px rgba(255,232,31,0.45), 0 2px 0 rgba(0,0,0,0.8)" }}
-                            >
-                              Desde otra galaxia Jedi
-                            </p>
-                          </motion.div>
+                        <div className="star-wars-crawl-scene relative z-10 h-full overflow-hidden">
+                          <div className="star-wars-crawl-plane">
+                            <p className="star-wars-crawl-text">Desde otra galaxia Jedi</p>
+                          </div>
                         </div>
                       </div>
                       <div className="mt-4 flex items-center justify-between gap-3">
